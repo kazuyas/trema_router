@@ -1,3 +1,2 @@
-def create_icmp_reply message
-  message
+def create_icmpv4_reply message
 end

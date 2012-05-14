@@ -13,7 +13,7 @@ class Router < Controller
 
   def packet_in dpid, message
     if ours?( message )
-      process dpid, message
+      respond dpid, message
     else
       forward dpid, message
     end
@@ -25,13 +25,13 @@ class Router < Controller
   #######
 
 
-  def process dpid, message
-    if message.arp_request?
-      send_packet dpid, message.in_port, create_arp_reply( message )
-    elsif message.arp_reply?
+  def respond dpid, message
+    if message.arp_reply?
       @arptable.update( message )
-    elsif message.icmp_echo_request?
-      send_packet dpid, message.in_port, create_icmp_reply( message )
+    elsif message.arp_request?
+      send_packet dpid, message.in_port, create_arp_reply( message )
+    elsif message.icmpv4_echo_request?
+      send_packet dpid, message.in_port, create_icmpv4_reply( message )
     end
   end
 
