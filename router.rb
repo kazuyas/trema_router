@@ -25,16 +25,76 @@ require "icmp"
 require "routetable"
 
 
-class Router < Controller
+class Interface
+  attr_reader :mac
+  attr_reader :ipaddr
+  attr_reader :dpid
+  attr_reader :port
 
 
-  def start
+  def initialize dpid, port, mac, ipaddr
+    @dpid = dpid
+    @port = port
+    @mac = mac
+    @ipaddr = ipaddr
+  end
+end
+
+
+class Router
+  attr_reader :arptable
+
+  def initialize
     @arptable = ARPTable.new
+
+    @iftable = []
+    @iftable[ 0 ] = Interface.new( 0x1, 
+                                   0x1,
+                                   "54:00:00:01:01:01", 
+                                   "192.168.1.254"
+                                   )
+    @iftable[ 1 ] = Interface.new( 0x1, 
+                                   0x2,
+                                   "54:00:00:02:02:02", 
+                                   "192.168.2.254" 
+                                   )
+  end
+  
+  
+  def ours? message
+    return true if message.macda.broadcast?
+  
+    @iftable.each do | interface |
+      continue if interface.dpid != message.datapath_id
+      continue if interface.port != message.in_port
+      coutinue if interface.mac != message.macda
+      return true
+    end
+
+    return false
+  end
+
+  
+  def resolve dpid, port, mac
+    @iftable.each do | interface |
+      continue if interface.dpid != dpid
+      continue if interface.port != port
+      coutinue if interface.mac != mac
+      return interface.ipaddr
+    end
+    return nil
+  end
+end
+
+
+class RouterController < Controller
+  def start
+    @router = Router.new
   end
 
 
   def packet_in dpid, message
-    if ours?( message )
+    if @router.ours?( message )
       respond dpid, message
     else
       forward dpid, message
@@ -50,7 +110,7 @@ class Router < Controller
   def respond dpid, message
     port = message.in_port
     if message.arp_reply?
-      @arptable.update( message )
+      @router.arptable.update( message )
     elsif message.arp_request?
       send_packet dpid, port, create_arp_reply( message )
     elsif message.icmpv4_echo_request?
@@ -59,10 +119,10 @@ class Router < Controller
   end
 
 
-  def send_packet dpid, out_port, frame
+  def send_packet dpid, out_port, packet
     send_packet_out(
       dpid,
-      :data => frame,
+      :data => packet,
       :actions => ActionOutput.new( :port => out_port )
     )
   end

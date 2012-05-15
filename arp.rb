@@ -24,19 +24,50 @@ def create_arp_reply message
 end
 
 
+class ARPEntry
+  attr_reader :dpid
+  attr_reader :port
+  attr_reader :mac
+  attr_reader :ipaddr
+  attr_writer :age_max
+
+
+  def initialize dpid, port, mac, ipaddr, age_max
+    @dpid = dpid
+    @port = port
+    @mac = mac
+    @ipaddr = ipaddr
+    @created = Time.now
+  end
+
+  
+  def age_out?
+    aged_out = Time.now - @created > @age_max
+    aged_out
+  end
+end
+
+
 class ARPTable
+  DEFAULT_AGE_MAX = 300
+
+
   def initialize
-    @arptable = Hash.new
+    @arptable = {}
   end
 
 
   def update message
-    @arptable[ message.arp_tpa ] = message.arp_tha
+    @arptable[ message.arp_tpa ] = message.arp_tha # REVISIT
   end
 
 
   def lookup ipaddr
-    @arptable[ ipaddr ]
+    if entry = @arptable[ ipaddr ]
+      [ entry.mac, entry.port, entry.dpid ]
+    else
+      nil
+    end
   end
 end
   
