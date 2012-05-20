@@ -51,12 +51,12 @@ class Router
     @iftable[ 0 ] = Interface.new( 0x1, 
                                    0x1,
                                    "54:00:00:01:01:01", 
-                                   "192.168.1.254"
+                                   "192.168.1.100"
                                    )
     @iftable[ 1 ] = Interface.new( 0x1, 
                                    0x2,
                                    "54:00:00:02:02:02", 
-                                   "192.168.2.254" 
+                                   "192.168.2.100" 
                                    )
   end
   
@@ -112,7 +112,8 @@ class RouterController < Controller
     if message.arp_reply?
       @router.arptable.update( message )
     elsif message.arp_request?
-      send_packet dpid, port, create_arp_reply( message )
+      addr = @router.arptable.lookup( message.arp_tpa )
+      send_packet dpid, port, create_arp_reply( message, addr )
     elsif message.icmpv4_echo_request?
       send_packet dpid, port, create_icmpv4_reply( message )
     end

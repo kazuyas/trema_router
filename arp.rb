@@ -20,7 +20,31 @@
 #
 
 
-def create_arp_reply message
+def create_arp_reply message, replyaddr
+  remote_nwaddr = message.arp_spa.to_array
+  local_nwaddr = message.arp_tpa.to_array
+  remote_dladdr = message.dl_src.to_array
+  local_dladdr = replyaddr.to_array
+    
+  data = []
+  data.concat( remote_dladdr ) # dst
+  data.concat( local_dladdr ) # src
+  data.concat( 0x08, 0x06 )  # ether type
+  # arp
+  data.concat( 0x00, 0x01 ) # hardware type
+  data.concat( 0x08, 0x00 ) # protocol type
+  data.concat( 0x06 ) # hardware address length
+  data.concat( 0x04 ) # protocol address length
+  data.concat( 0x00, 0x01 ) # operation  
+  data.concat( remote_dladdr )
+  data.concat( remote_nwaddr )
+  data.concat( local_dladdr )
+  data.concat( local_nwaddr )
+  while data.length < 64 do
+    data.concat( 0x00 )
+  end
+
+  return data.pack( "C*" )
 end
 
 
@@ -74,6 +98,6 @@ end
 
 ### Local variables:
 ### mode: Ruby
-### coding: utf-8
+### coding: utf-8-unix
 ### indent-tabs-mode: nil
 ### End:
