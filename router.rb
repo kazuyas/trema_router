@@ -35,8 +35,8 @@ class Interface
   def initialize dpid, port, mac, ipaddr
     @dpid = dpid
     @port = port
-    @mac = mac
-    @ipaddr = ipaddr
+    @mac = Mac.new( mac )
+    @ipaddr = IP.new( ipaddr )
   end
 end
 
@@ -48,10 +48,10 @@ class Router
     @arptable = ARPTable.new
 
     @iftable = []
-    @iftable[ 0 ] = Interface.new( 0x1, 
+    @iftable[ 0 ] = Interface.new( 0x44, 
                                    0x1,
                                    "54:00:00:01:01:01", 
-                                   "192.168.1.100"
+                                   "192.168.5.100"
                                    )
     @iftable[ 1 ] = Interface.new( 0x1, 
                                    0x2,
@@ -62,12 +62,12 @@ class Router
   
   
   def ours? message
-    return true if message.macda.broadcast?
+    return true if message.macda.to_array == [ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff ]
   
     @iftable.each do | interface |
-      continue if interface.dpid != message.datapath_id
-      continue if interface.port != message.in_port
-      coutinue if interface.mac != message.macda
+      next if interface.dpid != message.datapath_id
+      next if interface.port != message.in_port
+      next if interface.mac != message.macda
       return true
     end
 
@@ -75,12 +75,12 @@ class Router
   end
 
   
-  def resolve dpid, port, mac
+  def resolve dpid, port, ipaddr
     @iftable.each do | interface |
-      continue if interface.dpid != dpid
-      continue if interface.port != port
-      coutinue if interface.mac != mac
-      return interface.ipaddr
+      next if interface.dpid != dpid
+      next if interface.port != port
+      next if interface.ipaddr.to_i != ipaddr.to_i
+      return interface.mac
     end
     return nil
   end
@@ -112,7 +112,7 @@ class RouterController < Controller
     if message.arp_reply?
       @router.arptable.update( message )
     elsif message.arp_request?
-      addr = @router.arptable.lookup( message.arp_tpa )
+      addr = @router.resolve( dpid, message.in_port, message.arp_tpa )
       send_packet dpid, port, create_arp_reply( message, addr )
     elsif message.icmpv4_echo_request?
       send_packet dpid, port, create_icmpv4_reply( message )
