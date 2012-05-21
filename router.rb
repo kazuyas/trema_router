@@ -63,6 +63,7 @@ class Router
   
   def ours? message
     return true if message.macda.to_array == [ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff ]
+#    return true if message.macda.broadcast?
   
     @iftable.each do | interface |
       next if interface.dpid != message.datapath_id
