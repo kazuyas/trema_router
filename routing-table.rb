@@ -18,6 +18,9 @@
 #
 
 
+require "ipaddr"
+
+
 class RoutingTable
   ADDR_LEN = 32
 

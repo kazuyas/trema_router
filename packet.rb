@@ -1,3 +1,32 @@
+
+def create_arp_reply message, replyaddr
+  remote_nwaddr = message.arp_spa.to_array
+  local_nwaddr = message.arp_tpa.to_array
+  remote_dladdr = message.macsa.to_array
+  local_dladdr = replyaddr.to_array
+    
+  data = []
+  data.concat( remote_dladdr ) # dst
+  data.concat( local_dladdr ) # src
+  data.concat( [ 0x08, 0x06 ] )  # ether type
+  # arp
+  data.concat( [ 0x00, 0x01 ] ) # hardware type
+  data.concat( [ 0x08, 0x00 ] ) # protocol type
+  data.concat( [ 0x06 ] ) # hardware address length
+  data.concat( [ 0x04 ] ) # protocol address length
+  data.concat( [ 0x00, 0x02 ] ) # operation  
+  data.concat( local_dladdr )
+  data.concat( local_nwaddr )
+  data.concat( remote_dladdr )
+  data.concat( remote_nwaddr )
+  while data.length < 64 do
+    data.concat( [ 0x00 ] )
+  end
+
+  return data.pack( "C*" )
+end
+
+
 def create_icmpv4_reply message
 
   data = []
