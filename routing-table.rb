@@ -24,35 +24,34 @@ class RoutingTable
 
   def initialize
     @db = []
-    [ 0..ADDR_LEN ].each do | prefixlen |
-      @db[ prefixlen ] = Hash.new
+    ( 0..ADDR_LEN ).each do | plen |
+      @db[ plen ] = Hash.new
     end
   end
 
 
-  def add prefix, prefixlen, gateway
-    raise "assert" if @db[ prefixlen ] == nil
-    @db[ prefixlen ][ prefix.to_i ] = gateway
+  def add dest, plen, gateway
+    prefix = dest.mask( plen )
+    @db[ plen ][ prefix.to_i ] = gateway
   end
 
 
-  def delete prefix, prefixlen
-    @db[ prefixlen ].delete( prefix.to_i )
+  def delete dest, plen
+    prefix = dest.mask( plen )
+    @db[ plen ].delete( prefix.to_i )
   end
 
-  
-  def lookup destination
-    [ 0..ADDR_LEN ].each do | i |
-      prefixlen = ADDR_LEN - i
-      prefix = mask( destination, prefixlen )
-      if gateway = @db[ prefixlen ][ prefix.to_i ]
+
+  def lookup dest
+    ( 0..ADDR_LEN ).reverse_each do | plen |
+      prefix = dest.mask( plen )
+      if gateway = @db[ plen ][ prefix.to_i ]
         return gateway
       end
     end
     nil
   end
-end  
-
+end
 
 
 ### Local variables:

@@ -26,13 +26,51 @@ require "routing-table"
 describe RoutingTable do
   before do
     @rt = RoutingTable.new
+    @gateway11 = IPAddr.new( "192.168.1.1" )
+    @gateway12 = IPAddr.new( "192.168.1.2" )
+
+    @dest00 = IPAddr.new( "192.168.0.0" )
+    @dest01 = IPAddr.new( "192.168.0.1" )
+    @dest02 = IPAddr.new( "192.168.0.2" )
+    @dest11 = IPAddr.new( "192.168.1.1" )
+    @dest21 = IPAddr.new( "192.168.2.1" )
   end
 
-  it "should be added" do
-    @gateway = IPAddr.new( "192.168.1.1" )
-    @rt.add( IPAddr.new( "192.168.0.0" ), 24, @gateway )
-    @rt.lookup( IPAddr.new( "192.168.0.1" ) ).should == @gateway
+
+  it "should be answered" do
+    @rt.add( @dest01, 32, @gateway11 )
+    @rt.lookup( @dest01 ).should == @gateway11
   end
+
+
+  it "should be answered the longest matched gateway" do
+    @rt.add( @dest01, 32, @gateway11 )
+    @rt.add( @dest00, 24, @gateway12 )
+
+    @rt.lookup( @dest01 ).should == @gateway11
+    @rt.lookup( @dest02 ).should == @gateway12
+  end
+
+  
+  it "should not be answered if unmatched" do
+    @rt.add( @dest01, 32, @gateway11 )
+    @rt.lookup( @dest21 ).should == nil
+  end    
+
+
+  it "should not be answered if empty" do
+    @rt.lookup( @dest21 ).should == nil
+  end    
+
+
+  it "can delete an entry" do
+    @rt.add( @dest01, 32, @gateway11 )
+    @rt.add( @dest00, 24, @gateway12 )
+    @rt.lookup( @dest01 ).should == @gateway11
+
+    @rt.delete( @dest01, 32 )
+    @rt.lookup( @dest01 ).should == @gateway12
+  end    
 end
 
 
