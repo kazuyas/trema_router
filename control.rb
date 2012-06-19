@@ -40,7 +40,7 @@ class Interface
 end
 
 
-class Cplane
+class Control
   attr_reader :arptable
 
   def initialize

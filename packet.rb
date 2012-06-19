@@ -1,4 +1,3 @@
-
 def create_arp_reply message, replyaddr
   remote_nwaddr = message.arp_spa.to_array
   local_nwaddr = message.arp_tpa.to_array
@@ -26,9 +25,7 @@ def create_arp_reply message, replyaddr
   return data.pack( "C*" )
 end
 
-
 def create_icmpv4_reply message
-
   data = []
   data.concat( message.macsa.to_array )
   data.concat( message.macda.to_array )

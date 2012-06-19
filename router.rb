@@ -22,18 +22,18 @@
 
 require "arp"
 require "routing-table"
-require "cplane"
+require "control"
 require "packet"
 
 
 class Router < Controller
   def start
-    @cplane = Cplane.new
+    @control = Control.new
   end
 
 
   def packet_in dpid, message
-    if @cplane.ours?( message )
+    if @control.ours?( message )
       respond dpid, message
     else
       forward dpid, message
@@ -49,9 +49,9 @@ class Router < Controller
   def respond dpid, message
     port = message.in_port
     if message.arp_reply?
-      @cplane.arptable.update( message )
+      @control.arptable.update( message )
     elsif message.arp_request?
-      addr = @cplane.resolve( dpid, message.in_port, message.arp_tpa )
+      addr = @control.resolve( dpid, port, message.arp_tpa )
       send_packet dpid, port, create_arp_reply( message, addr )
     elsif message.icmpv4_echo_request?
       send_packet dpid, port, create_icmpv4_reply( message )
