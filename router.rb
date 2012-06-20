@@ -50,6 +50,7 @@ class Router < Controller
     port = message.in_port
     if message.arp_reply?
       @control.arptable.update( message )
+      
     elsif message.arp_request?
       addr = @control.resolve( dpid, port, message.arp_tpa )
       send_packet dpid, port, create_arp_reply( message, addr )
@@ -69,6 +70,27 @@ class Router < Controller
 
 
   def forward dpid, message
+    ipv4_daddr = @control.rttable.lookup( message )
+    egress = @control.egress( ipv4_addr )
+    eth_daddr = @control.arptable.lookup( ipv4_addr )
+
+    forward_packet egress, message, eth_daddr
+  end
+
+
+  def forward_packet interface, message, daddr
+    dpid = message.dpid
+    action = interface.forward_action( daddr )
+    send_flow_mod_add(
+      dpid,
+      :match => ExactMatch.from( message ),
+      :actions => action
+    )
+    send_packet_out(
+      dpid,
+      :packet_in => message,
+      :actions => action
+    )
   end
 end
 

@@ -27,15 +27,22 @@ require "arp"
 class Interface
   attr_reader :mac
   attr_reader :ipaddr
-  attr_reader :dpid
   attr_reader :port
 
 
-  def initialize dpid, port, mac, ipaddr
-    @dpid = dpid
+  def initialize port, mac, ipaddr
     @port = port
     @mac = Trema::Mac.new( mac )
     @ipaddr = IPAddr.new( ipaddr )
+  end
+
+
+  def forward_action daddr
+    [
+     ActionSetDlSrc.new( :dl_src => self.mac ),
+     ActionSetDlDst.new( :dl_dst => daddr ),
+     ActionOutput.new( self.port )
+    ]
   end
 end
 
@@ -45,15 +52,14 @@ class Control
 
   def initialize
     @arptable = ARPTable.new
+    @rttable = RoutingTable.new    
 
     @iftable = []
-    @iftable[ 0 ] = Interface.new( 0x44, 
-                                   0x1,
+    @iftable[ 0 ] = Interface.new( 0x1,
                                    "54:00:00:01:01:01", 
                                    "192.168.5.101"
                                    )
-    @iftable[ 1 ] = Interface.new( 0x1, 
-                                   0x2,
+    @iftable[ 1 ] = Interface.new( 0x2,
                                    "54:00:00:02:02:02", 
                                    "192.168.2.100" 
                                    )
@@ -65,7 +71,6 @@ class Control
 #    return true if message.macda.broadcast?
   
     @iftable.each do | interface |
-      next if interface.dpid != message.datapath_id
       next if interface.port != message.in_port
       next if interface.mac != message.macda
       return true
@@ -75,12 +80,20 @@ class Control
   end
 
   
-  def resolve dpid, port, ipaddr
+  def resolve port, ipaddr
     @iftable.each do | interface |
-      next if interface.dpid != dpid
       next if interface.port != port
       next if interface.ipaddr.to_i != ipaddr.to_i
       return interface.mac
+    end
+    return nil
+  end
+
+
+  def egress ipaddr 
+    @iftable.each do | interface |
+      next if interface.ipaddr.to_i != ipaddr.to_i
+      return interface
     end
     return nil
   end

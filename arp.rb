@@ -21,18 +21,14 @@
 
 
 class ARPEntry
-  attr_reader :dpid
   attr_reader :port
   attr_reader :mac
-  attr_reader :ipaddr
   attr_writer :age_max
 
 
-  def initialize dpid, port, mac, ipaddr, age_max
-    @dpid = dpid
+  def initialize port, mac, age_max
     @port = port
     @mac = mac
-    @ipaddr = ipaddr
     @created = Time.now
   end
 
@@ -49,21 +45,17 @@ class ARPTable
 
 
   def initialize
-    @arptable = {}
+    @arptable = Hash.new
   end
 
 
   def update message
-    @arptable[ message.arp_tpa ] = message.arp_tha # REVISIT
+    @arptable[ message.arp_tpa ] = [ message.arp_tha, message.in_port ]
   end
 
 
   def lookup ipaddr
-    if entry = @arptable[ ipaddr ]
-      [ entry.mac, entry.port, entry.dpid ]
-    else
-      nil
-    end
+    @arptable[ ipaddr ]
   end
 end
   
