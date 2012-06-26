@@ -90,6 +90,17 @@ class Control
   end
 
 
+  def lookup message
+    nexthop = @rttable.lookup message.ipv4_daddr
+    return nexthop
+  end
+
+
+  def arp_update message
+    @rttable.add message.arp_tpa, 32, message.arp_tha, "H", message.in_port, 0
+  end
+
+
   def egress ipaddr 
     @iftable.each do | interface |
       next if interface.ipaddr.to_i != ipaddr.to_i

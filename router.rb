@@ -47,7 +47,7 @@ class Router < Controller
   def respond dpid, message
     port = message.in_port
     if message.arp_reply?
-      @control.arptable.update( message )
+      @control.arp_update( message )
 
     elsif message.arp_request?
       addr = @control.resolve( dpid, port, message.arp_tpa )
@@ -68,11 +68,10 @@ class Router < Controller
 
 
   def forward dpid, message
-    ipv4_daddr = @control.rttable.lookup( message )
-    egress = @control.egress( ipv4_addr )
-    eth_daddr = @control.arptable.lookup( ipv4_addr )
-
-    forward_packet egress, eth_daddr, message
+    nexthop = @control.lookup( message )
+    if nexthop != nil 
+      forward_packet message, nexthop
+    end
   end
 
 
