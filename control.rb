@@ -92,6 +92,9 @@ class Control
 
   def lookup message
     nexthop = @rttable.lookup message.ipv4_daddr
+    if nexthop[ 2 ] != "H" 
+      nexthop = @rttable.lookup nexthop[ 1 ]
+    end
     return nexthop
   end
 
