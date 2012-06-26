@@ -1,7 +1,5 @@
 #
-# A router implementation on Trema 
-#
-# Author: Kazuya Suzuki
+# A router implementation on Trema
 #
 # Copyright (C) 2012 NEC Corporation
 #
@@ -50,7 +48,7 @@ class Router < Controller
     port = message.in_port
     if message.arp_reply?
       @control.arptable.update( message )
-      
+
     elsif message.arp_request?
       addr = @control.resolve( dpid, port, message.arp_tpa )
       send_packet dpid, port, create_arp_reply( message, addr )
@@ -74,11 +72,11 @@ class Router < Controller
     egress = @control.egress( ipv4_addr )
     eth_daddr = @control.arptable.lookup( ipv4_addr )
 
-    forward_packet egress, message, eth_daddr
+    forward_packet egress, eth_daddr, message
   end
 
 
-  def forward_packet interface, message, daddr
+  def forward_packet interface, daddr, message
     dpid = message.dpid
     action = interface.forward_action( daddr )
     send_flow_mod_add(

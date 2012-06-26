@@ -1,8 +1,6 @@
 #
 # ARP processing routines
 #
-# Author: Kazuya Suzuki
-#
 # Copyright (C) 2012 NEC Corporation
 #
 # This program is free software; you can redistribute it and/or modify
@@ -32,7 +30,7 @@ class ARPEntry
     @created = Time.now
   end
 
-  
+
   def age_out?
     aged_out = Time.now - @created > @age_max
     aged_out
@@ -58,7 +56,7 @@ class ARPTable
     @arptable[ ipaddr ]
   end
 end
-  
+
 
 ### Local variables:
 ### mode: Ruby

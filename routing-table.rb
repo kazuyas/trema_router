@@ -33,9 +33,9 @@ class RoutingTable
   end
 
 
-  def add dest, plen, gateway
+  def add dest, plen, gateway, flag, egress, expire
     prefix = dest.mask( plen )
-    @db[ plen ][ prefix.to_i ] = gateway
+    @db[ plen ][ prefix.to_i ] = [ gateway, flag, egress, expire ]
   end
 
 
@@ -48,8 +48,8 @@ class RoutingTable
   def lookup dest
     ( 0..ADDR_LEN ).reverse_each do | plen |
       prefix = dest.mask( plen )
-      if gateway = @db[ plen ][ prefix.to_i ]
-        return gateway
+      if nexthop = @db[ plen ][ prefix.to_i ]
+        return nexthop
       end
     end
     nil
