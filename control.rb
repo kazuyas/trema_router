@@ -1,8 +1,6 @@
 #
 # A router implementation on Trema
 #
-# Author: Kazuya Suzuki
-#
 # Copyright (C) 2012 NEC Corporation
 #
 # This program is free software; you can redistribute it and/or modify
@@ -22,6 +20,7 @@
 
 require "trema"
 require "arp"
+require "routing-table"
 
 
 class Interface
@@ -68,12 +67,22 @@ class Control
 
 
   def ours? message
-    return true if message.macda.to_array == [ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff ]
-#    return true if message.macda.broadcast?
+    interface = nil
+    @iftable.each do | each |
+      next if each.port != message.in_port
+      interface = each
+    end
+    return false if interface == nil
 
-    @iftable.each do | interface |
-      next if interface.port != message.in_port
-      next if interface.mac != message.macda
+    if message.macda.to_array == [ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff ]
+      if message.arp_request?
+        return true
+      else
+        return false
+      end
+    end
+
+    if interface.mac == message.macda
       return true
     end
 
@@ -82,21 +91,25 @@ class Control
 
 
   def resolve port, ipaddr
-    @iftable.each do | interface |
-      next if interface.port != port
-      next if interface.ipaddr.to_i != ipaddr.to_i
-      return interface.mac
+    @iftable.each do | each |
+      next if each.port != port
+      next if each.ipaddr.to_i != ipaddr.to_i
+      return each.mac
     end
     return nil
   end
 
 
   def lookup message
-    nexthop = @rttable.lookup message.ipv4_daddr
-    if nexthop[ 2 ] != "H"
-      nexthop = @rttable.lookup nexthop[ 1 ]
+    return nil if !message.ipv4?
+
+    route = @rttable.lookup( message.ipv4_daddr.value )
+    return nil if !route
+
+    if !route.gateway
+      route.gateway = message.ipv4_daddr.value
     end
-    return nexthop
+    return route
   end
 
 
@@ -106,9 +119,9 @@ class Control
 
 
   def egress ipaddr
-    @iftable.each do | interface |
-      next if interface.ipaddr.to_i != ipaddr.to_i
-      return interface
+    @iftable.each do | each |
+      next if each.ipaddr.to_i != ipaddr.to_i
+      return each
     end
     return nil
   end

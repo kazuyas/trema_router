@@ -29,15 +29,15 @@ class ARPEntry
     @mac = mac
     @age_max = age_max
     @last_updated = Time.now
-    debug "New entry: MAC addr = #{ @mac.to_s }, port = #{ @port }"
+    info "New entry: MAC addr = #{ @mac.to_s }, port = #{ @port }"
   end
 
-  
+
   def update port, mac, age_max
     @port = port
     @mac = mac
     @last_updated = Time.now
-    debug "Update entry: MAC addr = #{ @mac.to_s }, port = #{ @port }"
+    info "Update entry: MAC addr = #{ @mac.to_s }, port = #{ @port }"
   end
 
   def age_out?

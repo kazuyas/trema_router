@@ -1,3 +1,10 @@
+def ipaddr_to_array addr
+  addr.to_s.split( "." ).collect do | each |
+    each.hex
+  end
+end
+
+
 def create_ether_header macda, macsa, eth_type
   data = []
   data.concat( macda ) # dst
@@ -7,7 +14,7 @@ def create_ether_header macda, macsa, eth_type
 end
 
 
-def create_arp_packet type, spa, sha, tpa, tha
+def create_arp_packet type, tha, sha, tpa, spa
   data = create_ether_header( tha, sha, [ 0x08, 0x06 ] )
   # arp
   data.concat( [ 0x00, 0x01 ] ) # hardware type
@@ -29,13 +36,13 @@ end
 
 def create_arp_request route
   interface = route.interface
-  spa = interface.ipaddr
-  sha = interface.mac
+  spa = ipaddr_to_array( interface.ipaddr )
+  sha = interface.mac.to_array
 
-  tpa = route.gateway.to_array
+  tpa = ipaddr_to_array( route.gateway )
   tha = [ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff ]
 
-  return create_arp_packet 0x1, spa, sha, tpa, tha
+  return create_arp_packet( 0x1, tha, sha, tpa, spa )
 end
 
 
@@ -46,7 +53,7 @@ def create_arp_reply message, replyaddr
   tpa = message.arp_spa.to_array
   tha = message.macsa.to_array
 
-  return create_arp_packet 0x2, spa, sha, tpa, tha
+  return create_arp_packet( 0x2, tha, sha, tpa, spa )
 end
 
 

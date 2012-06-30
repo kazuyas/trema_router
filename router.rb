@@ -18,6 +18,7 @@
 #
 
 
+require "trema"
 require "arp"
 require "routing-table"
 require "control"
@@ -31,6 +32,7 @@ class Router < Controller
 
 
   def packet_in dpid, message
+    info "Receiving."
     if @control.ours?( message )
       respond dpid, message
     else
@@ -48,10 +50,13 @@ class Router < Controller
     port = message.in_port
     if message.arp_reply?
       @control.arp_update( message )
-
     elsif message.arp_request?
-      addr = @control.resolve( dpid, port, message.arp_tpa )
-      send_packet dpid, port, create_arp_reply( message, addr )
+      addr = @control.resolve( port, message.arp_tpa )
+      if addr
+        send_packet dpid, port, create_arp_reply( message, addr )
+      else
+        info "error ", message.eth_type
+      end
     elsif message.icmpv4_echo_request?
       send_packet dpid, port, create_icmpv4_reply( message )
     end
@@ -70,17 +75,19 @@ class Router < Controller
   def forward dpid, message
     route = @control.lookup( message )
     return if route == nil
+    return if route.interface.port == message.in_port
 
     eth_daddr = @control.arptable.lookup( route.gateway )
-    if eth_addr != nil
+    if eth_daddr != nil
       forward_packet message, route.interface, eth_daddr
     else
-      send_packet dpid, port, create_arp_request( route )
+      send_packet dpid, message.in_port, create_arp_request( route )
     end
   end
 
 
   def forward_packet message, interface, daddr
+    info "Forward packet."
     dpid = message.dpid
     action = interface.forward_action( daddr )
     send_flow_mod_add(
