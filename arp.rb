@@ -27,12 +27,21 @@ class ARPEntry
   def initialize port, mac, age_max
     @port = port
     @mac = mac
-    @created = Time.now
+    @age_max = age_max
+    @last_updated = Time.now
+    debug "New entry: MAC addr = #{ @mac.to_s }, port = #{ @port }"
   end
 
+  
+  def update port, mac, age_max
+    @port = port
+    @mac = mac
+    @last_updated = Time.now
+    debug "Update entry: MAC addr = #{ @mac.to_s }, port = #{ @port }"
+  end
 
   def age_out?
-    aged_out = Time.now - @created > @age_max
+    aged_out = Time.now - @last_update > @age_max
     aged_out
   end
 end
@@ -43,17 +52,23 @@ class ARPTable
 
 
   def initialize
-    @arptable = Hash.new
+    @db = {}
   end
 
 
   def update message
-    @arptable[ message.arp_tpa ] = [ message.arp_tha, message.in_port ]
+    entry = @db[ messate.arp_tpa ]
+    if entry
+      entry.update message.arp_tha, message.in_port, DEFAULT_AGE_MAX
+    else
+      new_entry = ARPEntry.new( message.arp_tha, message.in_port, DEFAULT_AGE_MAX )
+      @db[ message.arp_tpa ] = new_entry
+    end
   end
 
 
   def lookup ipaddr
-    @arptable[ ipaddr ]
+    @db[ ipaddr ]
   end
 end
 
