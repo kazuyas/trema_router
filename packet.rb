@@ -10,12 +10,14 @@ def create_ether_header macda, macsa, eth_type
   data.concat( macda ) # dst
   data.concat( macsa ) # src
   data.concat( eth_type ) # eth_type
-  return data.pack( "C*" )
+  data.pack( "C*" )
+  return data
 end
 
 
 def create_arp_packet type, tha, sha, tpa, spa
-  data = create_ether_header( tha, sha, [ 0x08, 0x06 ] )
+  data = []
+  data.concat( create_ether_header( tha, sha, [ 0x08, 0x06 ] ) )
   # arp
   data.concat( [ 0x00, 0x01 ] ) # hardware type
   data.concat( [ 0x08, 0x00 ] ) # protocol type
