@@ -1,5 +1,5 @@
 #
-# A router implementation on Trema 
+# A router implementation on Trema
 #
 # Author: Kazuya Suzuki
 #
@@ -27,13 +27,15 @@ require "arp"
 class Interface
   attr_reader :mac
   attr_reader :ipaddr
+  attr_reader :plen
   attr_reader :port
 
 
-  def initialize port, mac, ipaddr
+  def initialize port, mac, ipaddr, plen
     @port = port
     @mac = Trema::Mac.new( mac )
     @ipaddr = IPAddr.new( ipaddr )
+    @plen = plen
   end
 
 
@@ -52,24 +54,23 @@ class Control
 
   def initialize
     @arptable = ARPTable.new
-    @rttable = RoutingTable.new    
+    @rttable = RoutingTable.new
 
     @iftable = []
-    @iftable[ 0 ] = Interface.new( 0x1,
-                                   "54:00:00:01:01:01", 
-                                   "192.168.5.101"
-                                   )
-    @iftable[ 1 ] = Interface.new( 0x2,
-                                   "54:00:00:02:02:02", 
-                                   "192.168.2.100" 
-                                   )
+    new_entry = Interface.new( 0x1, "54:00:00:01:01:01", "192.168.11.1", 24 )
+    @iftable[ 0 ] = new_entry
+    @rttable.add( new_entry.ipaddr, new_entry.plen, nil, "U", new_entry )
+
+    new_entry = Interface.new( 0x4, "54:00:00:02:02:02", "192.168.12.1", 24 )
+    @iftable[ 1 ] = new_entry
+    @rttable.add( new_entry.ipaddr, new_entry.plen, nil, "U", new_entry )
   end
-  
-  
+
+
   def ours? message
     return true if message.macda.to_array == [ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff ]
 #    return true if message.macda.broadcast?
-  
+
     @iftable.each do | interface |
       next if interface.port != message.in_port
       next if interface.mac != message.macda
@@ -79,7 +80,7 @@ class Control
     return false
   end
 
-  
+
   def resolve port, ipaddr
     @iftable.each do | interface |
       next if interface.port != port
@@ -92,7 +93,7 @@ class Control
 
   def lookup message
     nexthop = @rttable.lookup message.ipv4_daddr
-    if nexthop[ 2 ] != "H" 
+    if nexthop[ 2 ] != "H"
       nexthop = @rttable.lookup nexthop[ 1 ]
     end
     return nexthop
@@ -104,7 +105,7 @@ class Control
   end
 
 
-  def egress ipaddr 
+  def egress ipaddr
     @iftable.each do | interface |
       next if interface.ipaddr.to_i != ipaddr.to_i
       return interface
