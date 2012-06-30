@@ -21,6 +21,20 @@
 require "ipaddr"
 
 
+class RouteEntry
+  attr_reader :gateway
+  attr_reader :flag
+  attr_reader :interface
+
+
+  def initialize gateway, flag, interface
+    @gateway = gateway
+    @flag = flag
+    @interface = interface
+  end
+end
+
+
 class RoutingTable
   ADDR_LEN = 32
 
@@ -33,9 +47,10 @@ class RoutingTable
   end
 
 
-  def add dest, plen, gateway, flag, egress, expire
+  def add dest, plen, gateway, flag, interface
     prefix = dest.mask( plen )
-    @db[ plen ][ prefix.to_i ] = [ gateway, flag, egress, expire ]
+    new_entry = RouteEntry( gateway, flag, interface )
+    @db[ plen ][ prefix.to_i ] = new_entry
   end
 
 
@@ -48,8 +63,8 @@ class RoutingTable
   def lookup dest
     ( 0..ADDR_LEN ).reverse_each do | plen |
       prefix = dest.mask( plen )
-      if nexthop = @db[ plen ][ prefix.to_i ]
-        return nexthop
+      if entry = @db[ plen ][ prefix.to_i ]
+        return entry
       end
     end
     nil

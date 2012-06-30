@@ -68,14 +68,19 @@ class Router < Controller
 
 
   def forward dpid, message
-    nexthop = @control.lookup( message )
-    if nexthop != nil 
-      forward_packet message, nexthop
+    route = @control.lookup( message )
+    return if route == nil
+
+    eth_daddr = @control.arptable.lookup( route.gateway )
+    if eth_addr != nil
+      forward_packet message, route.interface, eth_daddr
+    else
+      send_packet dpid, port, create_arp_request( route )
     end
   end
 
 
-  def forward_packet interface, daddr, message
+  def forward_packet message, interface, daddr
     dpid = message.dpid
     action = interface.forward_action( daddr )
     send_flow_mod_add(
