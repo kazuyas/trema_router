@@ -65,23 +65,23 @@ def create_ipv4_header message
 
   len = [ message.ipv4_tot_len >> 8, message.ipv4_tot_len & 0xff ]
   data.concat( len ) # len
-  data.concat( [ 0x00, 0x00 ] ) # ID
+  id = [ message.ipv4_id >> 8, message.ipv4_id & 0xff ]
+  data.concat( id ) # ID
   data.concat( [ 0x00, 0x00 ] ) # Flags, Frag offset
   data.concat( [ 0x40, message.ipv4_protocol ] ) # ttl, protocol
-
-  val = message.ipv4_checksum + 0x4000
-  ipv4_checksum = [  val >> 8, val & 0xff ]
-  data.concat( ipv4_checksum ) #
+  ipv4_checksum = [ message.ipv4_checksum >> 8, message.ipv4_checksum & 0xff ]
+  data.concat( ipv4_checksum ) # checksum
   data.concat( message.ipv4_daddr.to_array )
   data.concat( message.ipv4_saddr.to_array )
-  return data.pack( "C*" )
+  data.pack( "C*" )
+  return data
 end
 
 
 def create_icmpv4_reply message
-  data = create_ether_header( message.macsa.to_array, message.macda.to_array, [ 0x80, 0x00 ] )
+  data = create_ether_header( message.macsa.to_array, message.macda.to_array, [ 0x08, 0x00 ] )
 
-  data.concat( create.ipv4_header( message ) )
+  data.concat( create_ipv4_header( message ) )
 
   data.concat( [ 0x00, 0x00 ] )
 

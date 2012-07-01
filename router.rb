@@ -32,7 +32,7 @@ class Router < Controller
 
 
   def packet_in dpid, message
-    info "Receiving."
+    info "Receive packet_in."
     if @control.ours?( message )
       respond dpid, message
     else
@@ -49,15 +49,18 @@ class Router < Controller
   def respond dpid, message
     port = message.in_port
     if message.arp_reply?
+      info "Process arp reply."
       @control.arp_update( message )
     elsif message.arp_request?
+      info "Process arp request."
       addr = @control.resolve( port, message.arp_tpa )
       if addr
         send_packet dpid, port, create_arp_reply( message, addr )
       else
-        info "error ", message.eth_type
+        info "error"
       end
     elsif message.icmpv4_echo_request?
+      info "Process icmpv4 echo."
       send_packet dpid, port, create_icmpv4_reply( message )
     end
   end
