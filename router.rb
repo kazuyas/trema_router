@@ -33,9 +33,9 @@ class Router < Controller
 
   def packet_in dpid, message
     info "Receive packet_in."
-    if @control.ours?( message )
+    if @control.is_respond?( message )
       respond dpid, message
-    else
+    elsif @control.is_forward?( message )
       forward dpid, message
     end
   end
@@ -56,8 +56,6 @@ class Router < Controller
       addr = @control.resolve( port, message.arp_tpa )
       if addr
         send_packet dpid, port, create_arp_reply( message, addr )
-      else
-        info "error"
       end
     elsif message.icmpv4_echo_request?
       info "Process icmpv4 echo."

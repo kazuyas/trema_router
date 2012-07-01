@@ -68,7 +68,7 @@ class Control
   end
 
 
-  def ours? message
+  def is_respond? message
     interface = nil
     @iftable.each do | each |
       next if each.port != message.in_port
@@ -86,10 +86,19 @@ class Control
     end
 
     if message.macda == interface.mac
-      return true
+      interface = nil
+      @iftable.each do | each |
+        next if each.ipaddr != message.ipv4_daddr.value
+        return true;
+      end
+      return false
     end
 
     return false
+  end
+
+
+  def is_forward? message
   end
 
 
