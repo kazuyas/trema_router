@@ -81,18 +81,19 @@ class Router < Controller
     return if route == nil
     return if route.interface.port == message.in_port
 
-    eth_daddr = @control.arptable.lookup( route.gateway )
-    if eth_daddr != nil
-      forward_packet message, route.interface, eth_daddr
+    entry = @control.arptable.lookup( route.gateway )
+    if entry != nil
+      forward_packet message, route.interface, entry.mac
     else
-      send_packet dpid, message.in_port, create_arp_request( route )
+      info "Send arp request."
+      send_packet dpid, route.interface.port, create_arp_request( route )
     end
   end
 
 
   def forward_packet message, interface, daddr
     info "Forward packet."
-    dpid = message.dpid
+    dpid = message.datapath_id
     action = interface.forward_action( daddr )
     send_flow_mod_add(
       dpid,

@@ -19,6 +19,9 @@
 
 
 class ARPEntry
+  include Trema::Logger
+
+
   attr_reader :port
   attr_reader :mac
   attr_writer :age_max
@@ -40,6 +43,7 @@ class ARPEntry
     info "Update entry: MAC addr = #{ @mac.to_s }, port = #{ @port }"
   end
 
+
   def age_out?
     aged_out = Time.now - @last_update > @age_max
     aged_out
@@ -48,6 +52,9 @@ end
 
 
 class ARPTable
+  include Trema::Logger
+
+
   DEFAULT_AGE_MAX = 300
 
 
@@ -57,18 +64,19 @@ class ARPTable
 
 
   def update message
-    entry = @db[ messate.arp_tpa ]
+    entry = @db[ message.arp_spa.to_i ]
     if entry
-      entry.update message.arp_tha, message.in_port, DEFAULT_AGE_MAX
+      entry.update( message.in_port,  message.arp_sha, DEFAULT_AGE_MAX )
     else
-      new_entry = ARPEntry.new( message.arp_tha, message.in_port, DEFAULT_AGE_MAX )
-      @db[ message.arp_tpa ] = new_entry
+      new_entry = ARPEntry.new( message.in_port, message.arp_sha, DEFAULT_AGE_MAX )
+      @db[ message.arp_spa.to_i ] = new_entry
     end
   end
 
 
   def lookup ipaddr
-    @db[ ipaddr ]
+    entry = @db[ ipaddr.to_i ]
+    return entry
   end
 end
 

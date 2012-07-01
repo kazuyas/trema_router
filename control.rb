@@ -40,9 +40,9 @@ class Interface
 
   def forward_action daddr
     [
-     ActionSetDlSrc.new( :dl_src => self.mac ),
-     ActionSetDlDst.new( :dl_dst => daddr ),
-     ActionOutput.new( self.port )
+     Trema::ActionSetDlSrc.new( :dl_src => self.mac ),
+     Trema::ActionSetDlDst.new( :dl_dst => daddr ),
+     Trema::ActionOutput.new( self.port )
     ]
   end
 end
@@ -51,7 +51,9 @@ end
 class Control
   include Trema::Logger
 
+
   attr_reader :arptable
+
 
   def initialize
     @arptable = ARPTable.new
@@ -94,6 +96,10 @@ class Control
       end
     end
 
+    if message.arp_reply?
+      return true
+    end
+
     if message.arp_request?
       @iftable.each do | each |
         next if each.port == message.in_port
@@ -129,7 +135,7 @@ class Control
 
 
   def arp_update message
-    @rttable.add message.arp_tpa, 32, message.arp_tha, "H", message.in_port, 0
+    @arptable.update message
   end
 
 

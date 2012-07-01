@@ -1,6 +1,6 @@
 def ipaddr_to_array addr
   addr.to_s.split( "." ).collect do | each |
-    each.hex
+    each.to_i
   end
 end
 
