@@ -68,7 +68,7 @@ class Control
   end
 
 
-  def is_respond? message
+  def ours? message
     interface = nil
     @iftable.each do | each |
       next if each.port != message.in_port
@@ -77,28 +77,31 @@ class Control
     return false if interface == nil
 
     if message.macda.to_array == [ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff ]
-      if message.arp_request?
-        if message.arp_tpa.value == interface.ipaddr
-          return true
-        end
-      end
+      return true
+    elsif message.macda == interface.mac
+      return true
+    else
       return false
     end
-
-    if message.macda == interface.mac
-      interface = nil
-      @iftable.each do | each |
-        next if each.ipaddr != message.ipv4_daddr.value
-        return true;
-      end
-      return false
-    end
-
-    return false
   end
 
 
-  def is_forward? message
+  def is_respond? message
+    if message.ipv4?
+      @iftable.each do | each |
+        next if each.ipaddr != message.ipv4_daddr.value
+        return true
+      end
+    end
+
+    if message.arp_request?
+      @iftable.each do | each |
+        next if each.port == message.in_port
+        next if each.ipaddr == message.arp_tpa.value
+        return true
+      end
+      return false
+    end
   end
 
 
