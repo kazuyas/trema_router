@@ -99,18 +99,19 @@ class Control
       end
     end
 
-    if message.arp_reply?
-      return true
-    end
-
     if message.arp_request?
       @iftable.each do | each |
         next if each.port == message.in_port
         next if each.ipaddr == message.arp_tpa.value
         return true
       end
-      return false
     end
+
+    if message.arp_reply?
+      return true
+    end
+
+    return false
   end
 
 
