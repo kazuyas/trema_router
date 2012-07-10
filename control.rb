@@ -137,11 +137,6 @@ class Control
   end
 
 
-  def arp_update message
-    @arptable.update message
-  end
-
-
   def egress ipaddr
     @iftable.each do | each |
       next if each.ipaddr.to_i != ipaddr.to_i

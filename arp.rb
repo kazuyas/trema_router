@@ -36,7 +36,7 @@ class ARPEntry
   end
 
 
-  def update port, mac, age_max
+  def update port, mac
     @port = port
     @mac = mac
     @last_updated = Time.now
@@ -66,7 +66,7 @@ class ARPTable
   def update message
     entry = @db[ message.arp_spa.to_i ]
     if entry
-      entry.update( message.in_port,  message.arp_sha, DEFAULT_AGE_MAX )
+      entry.update( message.in_port,  message.arp_sha )
     else
       new_entry = ARPEntry.new( message.in_port, message.arp_sha, DEFAULT_AGE_MAX )
       @db[ message.arp_spa.to_i ] = new_entry
@@ -77,6 +77,13 @@ class ARPTable
   def lookup ipaddr
     entry = @db[ ipaddr.to_i ]
     return entry
+  end
+
+
+  def age
+    @db.delete_if do | ipaddr, entry |
+      entry.aged_out?
+    end
   end
 end
 

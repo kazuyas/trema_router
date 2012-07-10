@@ -26,6 +26,9 @@ require "packet"
 
 
 class Router < Controller
+  add_timer_event :age_arptable, 5, :periodic      
+
+
   def start
     @control = Control.new
   end
@@ -44,6 +47,11 @@ class Router < Controller
   end
 
 
+  def age_arptable
+    @control.arptable.age
+  end
+
+
   #######
   private
   #######
@@ -53,7 +61,7 @@ class Router < Controller
     port = message.in_port
     if message.arp_reply?
       info "Process arp reply."
-      @control.arp_update( message )
+      @control.arptable.update( message )
     elsif message.arp_request?
       info "Process arp request."
       addr = @control.resolve( port, message.arp_tpa )
