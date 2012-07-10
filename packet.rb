@@ -67,7 +67,7 @@ def create_ipv4_header message
   data.concat( len ) # len
   id = [ message.ipv4_id >> 8, message.ipv4_id & 0xff ]
   data.concat( id ) # ID
-  data.concat( [ 0x00, 0x00 ] ) # Flags, Frag offset
+  data.concat( [ 0x40, 0x00 ] ) # Flags, Frag offset
   data.concat( [ 0x40, message.ipv4_protocol ] ) # ttl, protocol
   ipv4_checksum = [ message.ipv4_checksum >> 8, message.ipv4_checksum & 0xff ]
   data.concat( ipv4_checksum ) # checksum
@@ -90,7 +90,7 @@ def create_icmpv4_reply message
   data.concat( icmp_checksum )
 
   offset = data.length
-  data.concat( message.data.unpack( "C*" )[ offset .. message.data.length ] )
+  data.concat( message.data.unpack( "C*" )[ offset .. message.data.length - 1 ] )
 
   return data.pack( "C*" )
 end
