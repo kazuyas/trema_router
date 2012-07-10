@@ -23,13 +23,11 @@ require "ipaddr"
 
 class RouteEntry
   attr_accessor :gateway
-  attr_reader :flag
   attr_reader :interface
 
 
-  def initialize gateway, flag, interface
+  def initialize gateway, interface
     @gateway = gateway
-    @flag = flag
     @interface = interface
   end
 end
@@ -47,9 +45,9 @@ class RoutingTable
   end
 
 
-  def add dest, plen, gateway, flag, interface
+  def add dest, plen, gateway, interface
     prefix = dest.mask( plen )
-    new_entry = RouteEntry.new( gateway, flag, interface )
+    new_entry = RouteEntry.new( gateway, interface )
     @db[ plen ][ prefix.to_i ] = new_entry
   end
 

@@ -60,13 +60,13 @@ class Control
     @rttable = RoutingTable.new
 
     @iftable = []
-    new_entry = Interface.new( 0x4, "54:00:00:01:01:01", "192.168.11.1", 24 )
+    new_entry = Interface.new( 39, "54:00:00:01:01:01", "192.168.11.1", 24 )
     @iftable[ 0 ] = new_entry
-    @rttable.add( new_entry.ipaddr, new_entry.plen, nil, "U", new_entry )
+    @rttable.add( new_entry.ipaddr, new_entry.plen, nil, new_entry )
 
-    new_entry = Interface.new( 0x1, "54:00:00:02:02:02", "192.168.12.1", 24 )
+    new_entry = Interface.new( 37, "54:00:00:02:02:02", "192.168.12.1", 24 )
     @iftable[ 1 ] = new_entry
-    @rttable.add( new_entry.ipaddr, new_entry.plen, nil, "U", new_entry )
+    @rttable.add( new_entry.ipaddr, new_entry.plen, nil, new_entry )
   end
 
 
