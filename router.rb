@@ -79,14 +79,17 @@ class Router < Controller
   def forward dpid, message
     route = @control.lookup( message )
     return if route == nil
-    return if route.interface.port == message.in_port
+
+    interface = route.interface
+    port = interface.port
+    return if port == message.in_port
 
     entry = @control.arptable.lookup( route.gateway )
     if entry != nil
-      forward_packet message, route.interface, entry.mac
+      forward_packet message, interface, entry.mac
     else
       info "Send arp request."
-      send_packet dpid, route.interface.port, create_arp_request( route )
+      send_packet dpid, port, create_arp_request( route )
     end
   end
 

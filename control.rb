@@ -67,6 +67,9 @@ class Control
     new_entry = Interface.new( 37, "54:00:00:02:02:02", "192.168.12.1", 24 )
     @iftable[ 1 ] = new_entry
     @rttable.add( new_entry.ipaddr, new_entry.plen, nil, new_entry )
+
+    @rttable.add( IPAddr.new( "192.168.13.0" ), 24, 
+                  IPAddr.new( "192.168.12.2" ), new_entry )
   end
 
 
