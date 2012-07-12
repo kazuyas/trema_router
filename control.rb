@@ -70,14 +70,14 @@ class Interfaces
 
   def find_by_ipaddr ipaddr
     @list.find do | each |
-      each.ipaddr.to_i == ipaddr.to_i
+      each.ipaddr == ipaddr
     end
   end
 
 
   def find_by_port_and_ipaddr port, ipaddr
     interface = @list.find do | each |
-      each.port == port and each.ipaddr.to_i == ipaddr.to_i
+      each.port == port and each.ipaddr == ipaddr
     end
   end
 

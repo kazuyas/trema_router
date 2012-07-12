@@ -36,13 +36,15 @@ class Router < Controller
 
   def packet_in dpid, message
     info "Receive packet_in."
-    if @control.ours?( message )
-      if @control.is_respond?( message )
-        respond dpid, message
-      else
-        info "forward"
-        forward dpid, message
-      end
+
+    return if message.ipv4? == false and message.arp? == false
+    return if @control.ours?( message ) == false
+
+    if @control.is_respond?( message )
+      respond dpid, message
+    else
+      info "forward"
+      forward dpid, message
     end
   end
 
