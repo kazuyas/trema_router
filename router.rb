@@ -63,7 +63,7 @@ class Router < Controller
     port = message.in_port
     if message.arp_reply?
       info "Process arp reply."
-      @control.arptable.update( message )
+      @control.arptable.update( port, message.arp_sha, message.arp_spa )
     elsif message.arp_request?
       info "Process arp request."
       interface = @control.resolve( port, message.arp_tpa )

@@ -64,13 +64,13 @@ class ARPTable
   end
 
 
-  def update message
-    entry = @db[ message.arp_spa.to_i ]
+  def update port, mac, ipaddr
+    entry = @db[ ipaddr.to_i ]
     if entry
-      entry.update( message.in_port,  message.arp_sha )
+      entry.update( port, mac )
     else
-      new_entry = ARPEntry.new( message.in_port, message.arp_sha, DEFAULT_AGE_MAX )
-      @db[ message.arp_spa.to_i ] = new_entry
+      new_entry = ARPEntry.new( port, mac, DEFAULT_AGE_MAX )
+      @db[ ipaddr.to_i ] = new_entry
     end
   end
 
