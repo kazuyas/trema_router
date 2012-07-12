@@ -64,9 +64,9 @@ class Router < Controller
       @control.arptable.update( message )
     elsif message.arp_request?
       info "Process arp request."
-      addr = @control.resolve( port, message.arp_tpa )
-      if addr
-        send_packet dpid, port, create_arp_reply( message, addr )
+      interface = @control.resolve( port, message.arp_tpa )
+      if interface
+        send_packet dpid, port, create_arp_reply( message, interface.mac )
       end
     elsif message.icmpv4_echo_request?
       info "Process icmpv4 echo."

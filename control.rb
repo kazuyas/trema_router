@@ -48,6 +48,55 @@ class Interface
 end
 
 
+class Interfaces
+  extend Forwardable
+  def_delegator :@list, :<<
+
+
+  attr_reader :list
+
+
+  def initialize
+    @list = []
+  end
+
+  
+  def find_by_port port
+    @list.find do | each |
+      each.port == port
+    end
+  end
+
+
+  def find_by_ipaddr ipaddr
+    @list.find do | each |
+      each.ipaddr.to_i == ipaddr.to_i
+    end
+  end
+
+
+  def find_by_port_and_ipaddr port, ipaddr
+    interface = @list.find do | each |
+      each.port == port and each.ipaddr.to_i == ipaddr.to_i
+    end
+  end
+
+
+  def ours? port, mac
+    interface = self.find_by_port( port )
+    return false if interface == nil
+
+    if mac.to_array == [ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff ]
+      return true
+    elsif mac == interface.mac
+      return true
+    else
+      return false
+    end
+  end
+end
+
+
 class Control
   include Trema::Logger
 
@@ -58,14 +107,14 @@ class Control
   def initialize
     @arptable = ARPTable.new
     @rttable = RoutingTable.new
+    @iftable = Interfaces.new
 
-    @iftable = []
     new_entry = Interface.new( 39, "54:00:00:01:01:01", "192.168.11.1", 24 )
-    @iftable[ 0 ] = new_entry
+    @iftable << new_entry
     @rttable.add( new_entry.ipaddr, new_entry.plen, nil, new_entry )
 
     new_entry = Interface.new( 37, "54:00:00:02:02:02", "192.168.12.1", 24 )
-    @iftable[ 1 ] = new_entry
+    @iftable << new_entry
     @rttable.add( new_entry.ipaddr, new_entry.plen, nil, new_entry )
 
     @rttable.add( IPAddr.new( "192.168.13.0" ), 24, 
@@ -74,33 +123,18 @@ class Control
 
 
   def ours? message
-    interface = nil
-    @iftable.each do | each |
-      next if each.port != message.in_port
-      interface = each
-    end
-    return false if interface == nil
-
-    if message.macda.to_array == [ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff ]
-      return true
-    elsif message.macda == interface.mac
-      return true
-    else
-      return false
-    end
+    @iftable.ours?( message.in_port, message.macda )
   end
 
 
   def is_respond? message
     if message.ipv4?
-      @iftable.each do | each |
-        next if each.ipaddr != message.ipv4_daddr.value
-        return true
-      end
+      interface = @iftable.find_by_ipaddr( message.ipv4_daddr.value )
+      return true if interface != nil
     end
 
     if message.arp_request?
-      @iftable.each do | each |
+      @iftable.list.each do | each |
         next if each.port == message.in_port
         next if each.ipaddr == message.arp_tpa.value
         return true
@@ -116,12 +150,7 @@ class Control
 
 
   def resolve port, ipaddr
-    @iftable.each do | each |
-      next if each.port != port
-      next if each.ipaddr.to_i != ipaddr.to_i
-      return each.mac
-    end
-    return nil
+    @iftable.find_by_port_and_ipaddr( port, ipaddr )
   end
 
 
@@ -134,16 +163,12 @@ class Control
     if !route.gateway
       route.gateway = message.ipv4_daddr.value
     end
-    return route
+    route
   end
 
 
   def egress ipaddr
-    @iftable.each do | each |
-      next if each.ipaddr.to_i != ipaddr.to_i
-      return each
-    end
-    return nil
+    @iftable.find_by_ipaddr( ipaddr )
   end
 end
 
