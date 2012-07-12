@@ -44,8 +44,9 @@ class ARPEntry
   end
 
 
-  def age_out?
-    aged_out = Time.now - @last_update > @age_max
+  def aged_out?
+    aged_out = Time.now - @last_updated > @age_max
+    info "Age out: An ARP entry (MAC address = #{ @mac.to_s }, port number = #{ @port }) has been aged-out" if aged_out
     aged_out
   end
 end
