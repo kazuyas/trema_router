@@ -76,8 +76,7 @@ class ARPTable
 
 
   def lookup ipaddr
-    entry = @db[ ipaddr.to_i ]
-    return entry
+    @db[ ipaddr.to_i ]
   end
 
 
