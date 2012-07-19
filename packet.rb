@@ -36,12 +36,11 @@ def create_arp_packet type, tha, sha, tpa, spa
 end
 
 
-def create_arp_request route
-  interface = route.interface
+def create_arp_request interface, addr
   spa = ipaddr_to_array( interface.ipaddr )
-  sha = interface.mac.to_array
+  sha = interface.hwaddr.to_array
 
-  tpa = ipaddr_to_array( route.gateway )
+  tpa = ipaddr_to_array( addr )
   tha = [ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff ]
 
   return create_arp_packet( 0x1, tha, sha, tpa, spa )
@@ -78,8 +77,8 @@ def create_ipv4_header message
 end
 
 
-def create_icmpv4_reply message
-  data = create_ether_header( message.macsa.to_array, message.macda.to_array, [ 0x08, 0x00 ] )
+def create_icmpv4_reply entry, interface, message
+  data = create_ether_header( interface.hwaddr.to_array, entry.hwaddr.to_array, [ 0x08, 0x00 ] )
 
   data.concat( create_ipv4_header( message ) )
 

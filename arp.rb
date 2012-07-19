@@ -23,30 +23,30 @@ class ARPEntry
 
 
   attr_reader :port
-  attr_reader :mac
+  attr_reader :hwaddr
   attr_writer :age_max
 
 
-  def initialize port, mac, age_max
+  def initialize port, hwaddr, age_max
     @port = port
-    @mac = mac
+    @hwaddr = hwaddr
     @age_max = age_max
     @last_updated = Time.now
-    info "New entry: MAC addr = #{ @mac.to_s }, port = #{ @port }"
+    info "New entry: MAC addr = #{ @hwaddr.to_s }, port = #{ @port }"
   end
 
 
-  def update port, mac
+  def update port, hwaddr
     @port = port
-    @mac = mac
+    @hwaddr = hwaddr
     @last_updated = Time.now
-    info "Update entry: MAC addr = #{ @mac.to_s }, port = #{ @port }"
+    info "Update entry: MAC addr = #{ @hwaddr.to_s }, port = #{ @port }"
   end
 
 
   def aged_out?
     aged_out = Time.now - @last_updated > @age_max
-    info "Age out: An ARP entry (MAC address = #{ @mac.to_s }, port number = #{ @port }) has been aged-out" if aged_out
+    info "Age out: An ARP entry (MAC address = #{ @hwaddr.to_s }, port number = #{ @port }) has been aged-out" if aged_out
     aged_out
   end
 end
@@ -64,13 +64,13 @@ class ARPTable
   end
 
 
-  def update message
-    entry = @db[ message.arp_spa.to_i ]
+  def update port, ipaddr, hwaddr
+    entry = @db[ ipaddr.to_i ]
     if entry
-      entry.update( message.in_port,  message.arp_sha )
+      entry.update( port, hw_addr )
     else
-      new_entry = ARPEntry.new( message.in_port, message.arp_sha, DEFAULT_AGE_MAX )
-      @db[ message.arp_spa.to_i ] = new_entry
+      new_entry = ARPEntry.new( port, hwaddr, DEFAULT_AGE_MAX )
+      @db[ ipaddr.to_i ] = new_entry
     end
   end
 
