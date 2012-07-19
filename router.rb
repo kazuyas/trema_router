@@ -21,16 +21,16 @@
 require "trema"
 require "arp"
 require "routing-table"
-require "control"
+require "control-element"
 require "packet"
 
 
 class Router < Controller
-  add_timer_event :age_arptable, 5, :periodic      
+  add_timer_event :age_arptable, 5, :periodic
 
 
   def start
-    @control = Control.new
+    @controlelement = ControlElement.new
   end
 
 
@@ -38,19 +38,18 @@ class Router < Controller
     info "Receive packet_in."
 
     return if message.ipv4? == false and message.arp? == false
-    return if @control.ours?( message ) == false
+    return if @controlelement.ours?( message ) == false
 
-    if @control.is_respond?( message )
+    if @controlelement.is_respond?( message )
       respond dpid, message
     else
-      info "forward"
       forward dpid, message
     end
   end
 
 
   def age_arptable
-    @control.arptable.age
+    @controlelement.arptable.age
   end
 
 
@@ -63,10 +62,10 @@ class Router < Controller
     port = message.in_port
     if message.arp_reply?
       info "Process arp reply."
-      @control.arptable.update( message )
+      @controlelement.arptable.update( message )
     elsif message.arp_request?
       info "Process arp request."
-      interface = @control.resolve( port, message.arp_tpa )
+      interface = @controlelement.resolve( port, message.arp_tpa )
       if interface
         send_packet dpid, port, create_arp_reply( message, interface.mac )
       end
@@ -87,14 +86,15 @@ class Router < Controller
 
 
   def forward dpid, message
-    route = @control.lookup( message )
+    info "forward"
+    route = @controlelement.lookup( message )
     return if route == nil
 
     interface = route.interface
     port = interface.port
     return if port == message.in_port
 
-    entry = @control.arptable.lookup( route.gateway )
+    entry = @controlelement.arptable.lookup( route.gateway )
     if entry != nil
       forward_packet message, interface, entry.mac
     else

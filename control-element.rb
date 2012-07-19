@@ -60,7 +60,7 @@ class Interfaces
     @list = []
   end
 
-  
+
   def find_by_port port
     @list.find do | each |
       each.port == port
@@ -97,7 +97,7 @@ class Interfaces
 end
 
 
-class Control
+class ControlElement
   include Trema::Logger
 
 
@@ -117,7 +117,7 @@ class Control
     @iftable << new_entry
     @rttable.add( new_entry.ipaddr, new_entry.plen, nil, new_entry )
 
-    @rttable.add( IPAddr.new( "192.168.13.0" ), 24, 
+    @rttable.add( IPAddr.new( "192.168.13.0" ), 24,
                   IPAddr.new( "192.168.12.2" ), new_entry )
   end
 
