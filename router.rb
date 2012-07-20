@@ -21,36 +21,49 @@
 require "trema"
 require "arp"
 require "routing-table"
-require "control"
+require "interface"
 require "packet"
 
 
 class Router < Controller
-  add_timer_event :age_arptable, 5, :periodic      
+  add_timer_event :age_arptable, 5, :periodic
 
 
   def start
-    @control = Control.new
+    @arptable = ARPTable.new
+    @rttable = RoutingTable.new
+    @iftable = Interfaces.new
+
+    new_entry = Interface.new( 39, "54:00:00:01:01:01", "192.168.11.1", 24 )
+    @iftable << new_entry
+    @rttable.add( new_entry.ipaddr, new_entry.plen, nil, new_entry )
+
+    new_entry = Interface.new( 37, "54:00:00:02:02:02", "192.168.12.1", 24 )
+    @iftable << new_entry
+    @rttable.add( new_entry.ipaddr, new_entry.plen, nil, new_entry )
+
+    @rttable.add( IPAddr.new( "192.168.13.0" ), 24,
+                  IPAddr.new( "192.168.12.2" ), new_entry )
   end
 
 
   def packet_in dpid, message
     info "Receive packet_in."
 
-    return if message.ipv4? == false and message.arp? == false
-    return if @control.ours?( message ) == false
+    return if @iftable.ours?( message.in_port, message.macda )
 
-    if @control.is_respond?( message )
-      respond dpid, message
-    else
-      info "forward"
-      forward dpid, message
+    if message.arp_request?
+      proc_arp_request( dpid, message )
+    elsif message.arp_reply?
+      proc_arp_reply( dpid, message )
+    elsif message.ipv4?
+      proc_ipv4( dpid, message )
     end
   end
 
 
   def age_arptable
-    @control.arptable.age
+    @arptable.age
   end
 
 
@@ -59,6 +72,7 @@ class Router < Controller
   #######
 
 
+<<<<<<< HEAD
   def respond dpid, message
     port = message.in_port
     if message.arp_reply?
@@ -70,10 +84,50 @@ class Router < Controller
       if interface
         send_packet dpid, port, create_arp_reply( message, interface.mac )
       end
-    elsif message.icmpv4_echo_request?
-      info "Process icmpv4 echo."
-      send_packet dpid, port, create_icmpv4_reply( message )
+=======
+  def proc_arp_request dpid, message
+    info "Process arp request."
+    interface = @iftable.find_by_port_and_ipaddr( port, message.arp_tpa )
+    if interface
+      send_packet dpid, message.in_port, create_arp_reply( message, interface.hwaddr )
     end
+  end
+
+
+  def proc_arp_reply dpid, message
+    info "Process arp reply."
+    @arptable.update( message.in_port, message.arp_spa, message.arp_sha )
+  end
+
+
+  def proc_ipv4 dpid, message
+    if should_forward?( message )
+      info "Forward packets."
+      forward dpid, message
+>>>>>>> 24846719c5e900f57ae20e70bc017150c563c27e
+    elsif message.icmpv4_echo_request?
+      proc_icmpv4_echo_request dpid, message
+    end
+  end
+
+
+  def proc_icmpv4_echo_request dpid, message
+    info "Process icmpv4 echo request."
+
+    port = message.in_port
+    interface = @iftable.find_by_port( port )
+    entry = @arptable.lookup( message.ipv4_saddr )
+    if entry == nil
+      info "Send arp request."
+      send_packet dpid, port, create_arp_request( interface, message.ipv4_saddr )
+    else
+      send_packet dpid, message.in_port, create_icmpv4_reply( entry, interface, message )
+    end
+  end
+
+
+  def should_forward? message
+    @iftable.find_by_ipaddr( message.ipaddr ) == nil
   end
 
 
@@ -87,26 +141,27 @@ class Router < Controller
 
 
   def forward dpid, message
-    route = @control.lookup( message )
-    return if route == nil
+    route = rttable.lookup( message.ipv4_daddr.value )
+    return if !route
+    if !route.gateway
+      route.gateway = message.ipv4_daddr.value
+    end
 
     interface = route.interface
     port = interface.port
     return if port == message.in_port
 
-    entry = @control.arptable.lookup( route.gateway )
-    if entry != nil
-      forward_packet message, interface, entry.mac
-    else
+    entry = @arptable.lookup( route.gateway )
+    if entry == nil
       info "Send arp request."
-      send_packet dpid, port, create_arp_request( route )
+      send_packet dpid, port, create_arp_request( interface, route.gateway )
+    else
+      forward_packet dpid, message, interface, entry.hwaddr
     end
   end
 
 
-  def forward_packet message, interface, daddr
-    info "Forward packet."
-    dpid = message.datapath_id
+  def forward_packet dpid, message, interface, daddr
     action = interface.forward_action( daddr )
     send_flow_mod_add(
       dpid,
