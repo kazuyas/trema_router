@@ -26,9 +26,8 @@ class RouteEntry
   attr_reader :interface
 
 
-  def initialize gateway, interface
+  def initialize gateway
     @gateway = gateway
-    @interface = interface
   end
 end
 
@@ -42,9 +41,9 @@ class RoutingTable
   end
 
 
-  def add dest, plen, gateway, interface
+  def add dest, plen, gateway
     prefix = dest.mask( plen )
-    @db[ plen ][ prefix.to_i ] = RouteEntry.new( gateway, interface )
+    @db[ plen ][ prefix.to_i ] = RouteEntry.new( gateway )
   end
 
 

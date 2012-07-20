@@ -38,14 +38,13 @@ class Router < Controller
 
     new_entry = Interface.new( 47, "54:00:00:01:01:01", "192.168.11.1", 24 )
     @interfaces << new_entry
-    @routing_table.add( new_entry.ipaddr, new_entry.plen, nil, new_entry )
+    @routing_table.add( new_entry.ipaddr, new_entry.plen, nil )
 
     new_entry = Interface.new( 45, "54:00:00:02:02:02", "192.168.12.1", 24 )
     @interfaces << new_entry
-    @routing_table.add( new_entry.ipaddr, new_entry.plen, nil, new_entry )
+    @routing_table.add( new_entry.ipaddr, new_entry.plen, nil )
 
-    @routing_table.add( IPAddr.new( "192.168.13.0" ), 24,
-                  IPAddr.new( "192.168.12.2" ), new_entry )
+    @routing_table.add( IPAddr.new( "192.168.13.0" ), 24, IPAddr.new( "192.168.12.2" ) )
   end
 
 
@@ -102,11 +101,11 @@ class Router < Controller
   def handle_icmpv4_echo_request dpid, message
     port = message.in_port
     interface = @interfaces.find_by_port( port )
-    entry = @arp_table.lookup( message.ipv4_saddr )
-    if entry.nil?
+    arp_entry = @arp_table.lookup( message.ipv4_saddr )
+    if arp_entry.nil?
       send_packet dpid, port, create_arp_request( interface, message.ipv4_saddr )
     else
-      send_packet dpid, port, create_icmpv4_reply( entry, interface, message )
+      send_packet dpid, port, create_icmpv4_reply( arp_entry, interface, message )
     end
   end
 
@@ -134,15 +133,15 @@ class Router < Controller
       nexthop = message.ipv4_daddr.value
     end
 
-    interface = route.interface
+    interface = @interfaces.find_by_prefix( nexthop )
     port = interface.port
     return if port == message.in_port
 
-    entry = @arp_table.lookup( nexthop )
-    if entry.nil?
+    arp_entry = @arp_table.lookup( nexthop )
+    if arp_entry.nil?
       send_packet dpid, port, create_arp_request( interface, nexthop )
     else
-      forward_packet dpid, message, interface, entry.hwaddr
+      forward_packet dpid, message, interface, arp_entry.hwaddr
     end
   end
 

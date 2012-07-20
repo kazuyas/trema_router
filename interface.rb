@@ -75,6 +75,14 @@ class Interfaces
   end
 
 
+  def find_by_prefix ipaddr
+    @list.find do | each |
+      plen = each.plen
+      each.ipaddr.mask( plen ) == ipaddr.mask( plen )
+    end
+  end
+
+
   def find_by_port_and_ipaddr port, ipaddr
     interface = @list.find do | each |
       each.port == port and each.ipaddr == ipaddr
@@ -84,7 +92,7 @@ class Interfaces
 
   def ours? port, hwaddr
     interface = self.find_by_port( port )
-    return false if interface == nil
+    return false if interface.nil?
 
     if hwaddr.to_array == [ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff ]
       return true
