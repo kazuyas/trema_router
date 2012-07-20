@@ -28,7 +28,7 @@ def create_arp_packet type, tha, sha, tpa, spa
   data.concat( spa )
   data.concat( tha )
   data.concat( tpa )
-  while data.length < 64 do
+  while data.length < 60 do
     data.concat( [ 0x00 ] )
   end
 
@@ -66,7 +66,8 @@ def create_ipv4_header message
   data.concat( len ) # len
   id = [ message.ipv4_id >> 8, message.ipv4_id & 0xff ]
   data.concat( id ) # ID
-  data.concat( [ 0x40, 0x00 ] ) # Flags, Frag offset
+#  data.concat( [ 0x40, 0x00 ] ) # Flags, Frag offset
+  data.concat( [ 0x00, 0x00 ] ) # Flags, Frag offset
   data.concat( [ 0x40, message.ipv4_protocol ] ) # ttl, protocol
   ipv4_checksum = [ message.ipv4_checksum >> 8, message.ipv4_checksum & 0xff ]
   data.concat( ipv4_checksum ) # checksum
@@ -78,7 +79,7 @@ end
 
 
 def create_icmpv4_reply entry, interface, message
-  data = create_ether_header( interface.hwaddr.to_array, entry.hwaddr.to_array, [ 0x08, 0x00 ] )
+  data = create_ether_header( entry.hwaddr.to_array, interface.hwaddr.to_array, [ 0x08, 0x00 ] )
 
   data.concat( create_ipv4_header( message ) )
 
