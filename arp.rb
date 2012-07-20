@@ -53,9 +53,6 @@ end
 
 
 class ARPTable
-  include Trema::Logger
-
-
   DEFAULT_AGE_MAX = 300
 
 

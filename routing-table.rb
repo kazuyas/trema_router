@@ -38,17 +38,13 @@ class RoutingTable
 
 
   def initialize
-    @db = []
-    ( 0..ADDR_LEN ).each do | plen |
-      @db[ plen ] = Hash.new
-    end
+    @db = Array.new( ADDR_LEN + 1 ) { Hash.new }
   end
 
 
   def add dest, plen, gateway, interface
     prefix = dest.mask( plen )
-    new_entry = RouteEntry.new( gateway, interface )
-    @db[ plen ][ prefix.to_i ] = new_entry
+    @db[ plen ][ prefix.to_i ] = RouteEntry.new( gateway, interface )
   end
 
 

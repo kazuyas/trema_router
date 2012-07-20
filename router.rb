@@ -1,5 +1,5 @@
 #
-# A router implementation on Trema
+# A router implementation in Trema
 #
 # Copyright (C) 2012 NEC Corporation
 #
@@ -18,52 +18,46 @@
 #
 
 
-require "trema"
 require "arp"
-require "routing-table"
 require "interface"
 require "packet"
+require "routing-table"
 
 
 class Router < Controller
-  add_timer_event :age_arptable, 5, :periodic
+  add_timer_event :age_arp_table, 5, :periodic
 
 
   def start
-    @arptable = ARPTable.new
-    @rttable = RoutingTable.new
-    @iftable = Interfaces.new
+    @arp_table = ARPTable.new
+    @routing_table = RoutingTable.new
+    @interfaces = Interfaces.new
 
     new_entry = Interface.new( 47, "54:00:00:01:01:01", "192.168.11.1", 24 )
-    @iftable << new_entry
-    @rttable.add( new_entry.ipaddr, new_entry.plen, nil, new_entry )
+    @interfaces << new_entry
+    @routing_table.add( new_entry.ipaddr, new_entry.plen, nil, new_entry )
 
-    new_entry = Interface.new( 46, "54:00:00:02:02:02", "192.168.12.1", 24 )
-    @iftable << new_entry
-    @rttable.add( new_entry.ipaddr, new_entry.plen, nil, new_entry )
+    new_entry = Interface.new( 45, "54:00:00:02:02:02", "192.168.12.1", 24 )
+    @interfaces << new_entry
+    @routing_table.add( new_entry.ipaddr, new_entry.plen, nil, new_entry )
 
-    @rttable.add( IPAddr.new( "192.168.13.0" ), 24,
+    @routing_table.add( IPAddr.new( "192.168.13.0" ), 24,
                   IPAddr.new( "192.168.12.2" ), new_entry )
   end
 
 
   def packet_in dpid, message
-    info "Receive packet_in."
-
-    return if @iftable.ours?( message.in_port, message.macda ) == false
+    return if not ours? message
 
     if message.arp_request?
-      proc_arp_request( dpid, message )
+      handle_arp_request( dpid, message )
     elsif message.arp_reply?
-      proc_arp_reply( dpid, message )
+      handle_arp_reply( dpid, message )
     elsif message.ipv4?
-      proc_ipv4( dpid, message )
+      handle_ipv4( dpid, message )
+    else
+      # noop.
     end
-  end
-
-
-  def age_arptable
-    @arptable.age
   end
 
 
@@ -72,49 +66,50 @@ class Router < Controller
   #######
 
 
-  def proc_arp_request dpid, message
-    info "Process arp request."
+  def ours? message
+    @interfaces.ours?( message.in_port, message.macda )
+  end
+
+
+  def handle_arp_request dpid, message
     port = message.in_port
-    interface = @iftable.find_by_port_and_ipaddr( port, message.arp_tpa )
+    interface = @interfaces.find_by_port_and_ipaddr( port, message.arp_tpa )
     if interface
       send_packet dpid, port, create_arp_reply( message, interface.hwaddr )
     end
   end
 
 
-  def proc_arp_reply dpid, message
-    info "Process arp reply."
-    @arptable.update( message.in_port, message.arp_spa, message.arp_sha )
+  def handle_arp_reply dpid, message
+    @arp_table.update( message.in_port, message.arp_spa, message.arp_sha )
   end
 
 
-  def proc_ipv4 dpid, message
+  def handle_ipv4 dpid, message
     if should_forward?( message )
-      info "Forward packets."
       forward dpid, message
     elsif message.icmpv4_echo_request?
-      proc_icmpv4_echo_request dpid, message
+      handle_icmpv4_echo_request dpid, message
+    else
+      # noop.
     end
   end
 
 
-  def proc_icmpv4_echo_request dpid, message
-    info "Process icmpv4 echo request."
-
+  def handle_icmpv4_echo_request dpid, message
     port = message.in_port
-    interface = @iftable.find_by_port( port )
-    entry = @arptable.lookup( message.ipv4_saddr )
-    if entry == nil
-      info "Send arp request."
+    interface = @interfaces.find_by_port( port )
+    entry = @arp_table.lookup( message.ipv4_saddr )
+    if entry.nil?
       send_packet dpid, port, create_arp_request( interface, message.ipv4_saddr )
     else
-      send_packet dpid, message.in_port, create_icmpv4_reply( entry, interface, message )
+      send_packet dpid, port, create_icmpv4_reply( entry, interface, message )
     end
   end
 
 
   def should_forward? message
-    @iftable.find_by_ipaddr( message.ipv4_daddr ) == nil
+    @interfaces.find_by_ipaddr( message.ipv4_daddr ).nil?
   end
 
 
@@ -128,20 +123,21 @@ class Router < Controller
 
 
   def forward dpid, message
-    route = @rttable.lookup( message.ipv4_daddr.value )
-    return if !route
-    if !route.gateway
-      route.gateway = message.ipv4_daddr.value
+    route = @routing_table.lookup( message.ipv4_daddr.value )
+    return if route.nil?
+    if route.gateway
+      nexthop = route.gateway
+    else
+      nexthop = message.ipv4_daddr.value
     end
 
     interface = route.interface
     port = interface.port
     return if port == message.in_port
 
-    entry = @arptable.lookup( route.gateway )
-    if entry == nil
-      info "Send arp request."
-      send_packet dpid, port, create_arp_request( interface, route.gateway )
+    entry = @arp_table.lookup( nexthop )
+    if entry.nil?
+      send_packet dpid, port, create_arp_request( interface, nexthop )
     else
       forward_packet dpid, message, interface, entry.hwaddr
     end
@@ -160,6 +156,11 @@ class Router < Controller
       :packet_in => message,
       :actions => action
     )
+  end
+
+
+  def age_arp_table
+    @arp_table.age
   end
 end
 
