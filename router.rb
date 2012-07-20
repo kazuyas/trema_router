@@ -20,11 +20,14 @@
 
 require "arp"
 require "interface"
-require "packet"
 require "routing-table"
+require "utils"
 
 
 class Router < Controller
+  include Utils
+
+
   add_timer_event :age_arp_table, 5, :periodic
 
 
