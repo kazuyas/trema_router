@@ -125,15 +125,14 @@ class Router < Controller
 
 
   def forward dpid, message
-    route = @routing_table.lookup( message.ipv4_daddr.value )
-    return if route.nil?
-    if route.gateway
-      nexthop = route.gateway
-    else
+    nexthop = @routing_table.lookup( message.ipv4_daddr.value )
+    if nexthop.nil?
       nexthop = message.ipv4_daddr.value
     end
 
     interface = @interfaces.find_by_prefix( nexthop )
+    return if interface.nil?
+
     port = interface.port
     return if port == message.in_port
 

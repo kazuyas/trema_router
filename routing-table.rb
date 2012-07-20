@@ -21,17 +21,6 @@
 require "ipaddr"
 
 
-class RouteEntry
-  attr_accessor :gateway
-  attr_reader :interface
-
-
-  def initialize gateway
-    @gateway = gateway
-  end
-end
-
-
 class RoutingTable
   ADDR_LEN = 32
 
@@ -43,7 +32,7 @@ class RoutingTable
 
   def add dest, plen, gateway
     prefix = dest.mask( plen )
-    @db[ plen ][ prefix.to_i ] = RouteEntry.new( gateway )
+    @db[ plen ][ prefix.to_i ] = gateway
   end
 
 

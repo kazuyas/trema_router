@@ -38,23 +38,22 @@ describe RoutingTable do
 
 
   it "should be answered" do
-    @rt.add( @dest01, 32, @gateway11, nil )
-    @rt.lookup( @dest01 ).gateway.should == @gateway11
-    @rt.lookup( @dest01 ).interface.should == nil
+    @rt.add( @dest01, 32, @gateway11 )
+    @rt.lookup( @dest01 ).should == @gateway11
   end
 
 
   it "should be answered the longest matched gateway" do
-    @rt.add( @dest01, 32, @gateway11, nil )
-    @rt.add( @dest00, 24, @gateway12, nil )
+    @rt.add( @dest01, 32, @gateway11 )
+    @rt.add( @dest00, 24, @gateway12 )
 
-    @rt.lookup( @dest01 ).gateway.should == @gateway11
-    @rt.lookup( @dest02 ).gateway.should == @gateway12
+    @rt.lookup( @dest01 ).should == @gateway11
+    @rt.lookup( @dest02 ).should == @gateway12
   end
 
 
   it "should not be answered if unmatched" do
-    @rt.add( @dest01, 32, @gateway11, nil )
+    @rt.add( @dest01, 32, @gateway11 )
     @rt.lookup( @dest21 ).should == nil
   end
 
@@ -65,12 +64,12 @@ describe RoutingTable do
 
 
   it "can delete an entry" do
-    @rt.add( @dest01, 32, @gateway11, nil )
-    @rt.add( @dest00, 24, @gateway12, nil )
-    @rt.lookup( @dest01 ).gateway.should == @gateway11
+    @rt.add( @dest01, 32, @gateway11 )
+    @rt.add( @dest00, 24, @gateway12 )
+    @rt.lookup( @dest01 ).should == @gateway11
 
     @rt.delete( @dest01, 32 )
-    @rt.lookup( @dest01 ).gateway.should == @gateway12
+    @rt.lookup( @dest01 ).should == @gateway12
   end
 end
 
