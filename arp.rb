@@ -64,21 +64,12 @@ class ARPTable
   end
 
 
-<<<<<<< HEAD
-  def update port, mac, ipaddr
-    entry = @db[ ipaddr.to_i ]
-    if entry
-      entry.update( port, mac )
-    else
-      new_entry = ARPEntry.new( port, mac, DEFAULT_AGE_MAX )
-=======
   def update port, ipaddr, hwaddr
     entry = @db[ ipaddr.to_i ]
     if entry
       entry.update( port, hw_addr )
     else
       new_entry = ARPEntry.new( port, hwaddr, DEFAULT_AGE_MAX )
->>>>>>> 24846719c5e900f57ae20e70bc017150c563c27e
       @db[ ipaddr.to_i ] = new_entry
     end
   end

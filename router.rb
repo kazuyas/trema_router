@@ -34,11 +34,11 @@ class Router < Controller
     @rttable = RoutingTable.new
     @iftable = Interfaces.new
 
-    new_entry = Interface.new( 39, "54:00:00:01:01:01", "192.168.11.1", 24 )
+    new_entry = Interface.new( 47, "54:00:00:01:01:01", "192.168.11.1", 24 )
     @iftable << new_entry
     @rttable.add( new_entry.ipaddr, new_entry.plen, nil, new_entry )
 
-    new_entry = Interface.new( 37, "54:00:00:02:02:02", "192.168.12.1", 24 )
+    new_entry = Interface.new( 46, "54:00:00:02:02:02", "192.168.12.1", 24 )
     @iftable << new_entry
     @rttable.add( new_entry.ipaddr, new_entry.plen, nil, new_entry )
 
@@ -50,7 +50,7 @@ class Router < Controller
   def packet_in dpid, message
     info "Receive packet_in."
 
-    return if @iftable.ours?( message.in_port, message.macda )
+    return if @iftable.ours?( message.in_port, message.macda ) == false
 
     if message.arp_request?
       proc_arp_request( dpid, message )
@@ -72,24 +72,12 @@ class Router < Controller
   #######
 
 
-<<<<<<< HEAD
-  def respond dpid, message
-    port = message.in_port
-    if message.arp_reply?
-      info "Process arp reply."
-      @control.arptable.update( port, message.arp_sha, message.arp_spa )
-    elsif message.arp_request?
-      info "Process arp request."
-      interface = @control.resolve( port, message.arp_tpa )
-      if interface
-        send_packet dpid, port, create_arp_reply( message, interface.mac )
-      end
-=======
   def proc_arp_request dpid, message
     info "Process arp request."
+    port = message.in_port
     interface = @iftable.find_by_port_and_ipaddr( port, message.arp_tpa )
     if interface
-      send_packet dpid, message.in_port, create_arp_reply( message, interface.hwaddr )
+      send_packet dpid, port, create_arp_reply( message, interface.hwaddr )
     end
   end
 
@@ -104,7 +92,6 @@ class Router < Controller
     if should_forward?( message )
       info "Forward packets."
       forward dpid, message
->>>>>>> 24846719c5e900f57ae20e70bc017150c563c27e
     elsif message.icmpv4_echo_request?
       proc_icmpv4_echo_request dpid, message
     end
@@ -127,7 +114,7 @@ class Router < Controller
 
 
   def should_forward? message
-    @iftable.find_by_ipaddr( message.ipaddr ) == nil
+    @iftable.find_by_ipaddr( message.ipv4_daddr ) == nil
   end
 
 
@@ -141,7 +128,7 @@ class Router < Controller
 
 
   def forward dpid, message
-    route = rttable.lookup( message.ipv4_daddr.value )
+    route = @rttable.lookup( message.ipv4_daddr.value )
     return if !route
     if !route.gateway
       route.gateway = message.ipv4_daddr.value
