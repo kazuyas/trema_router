@@ -1,5 +1,5 @@
 #
-# A router implementation on Trema
+# A router implementation in Trema
 #
 # Copyright (C) 2012 NEC Corporation
 #
@@ -18,7 +18,6 @@
 #
 
 
-require "trema"
 require "arp"
 require "routing-table"
 
@@ -32,17 +31,17 @@ class Interface
 
   def initialize options = {}
     @port = options[ :port ]
-    @hwaddr = Trema::Mac.new( options[ :hwaddr ] )
+    @hwaddr = Mac.new( options[ :hwaddr ] )
     @ipaddr = IPAddr.new( options[ :ipaddr ] )
     @plen = options[ :plen ]
   end
 
 
-  def forward_action daddr
+  def forward_action macda
     [
-     Trema::ActionSetDlSrc.new( :dl_src => self.hwaddr ),
-     Trema::ActionSetDlDst.new( :dl_dst => daddr ),
-     Trema::ActionOutput.new( self.port )
+      ActionSetDlSrc.new( :dl_src => self.hwaddr ),
+      ActionSetDlDst.new( :dl_dst => macda ),
+      ActionOutput.new( self.port )
     ]
   end
 end
@@ -52,7 +51,7 @@ class Interfaces
   def initialize interfaces
     @list = []
     interfaces.each do | each |
-      @list << Interface.new( each )
+      self.add( each )
     end
   end
 
@@ -95,7 +94,7 @@ class Interfaces
     interface = self.find_by_port( port )
     return false if interface.nil?
 
-    if hwaddr.to_array == [ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff ]
+    if hwaddr.to_a == [ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff ]
       return true
     elsif hwaddr == interface.hwaddr
       return true

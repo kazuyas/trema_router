@@ -59,7 +59,7 @@ module Utils
 
   def create_arp_request interface, addr
     spa = ipaddr_to_array( interface.ipaddr )
-    sha = interface.hwaddr.to_array
+    sha = interface.hwaddr.to_a
 
     tpa = ipaddr_to_array( addr )
     tha = [ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff ]
@@ -70,10 +70,10 @@ module Utils
 
   def create_arp_reply message, replyaddr
     spa = message.arp_tpa.to_array
-    sha = replyaddr.to_array
+    sha = replyaddr.to_a
 
     tpa = message.arp_spa.to_array
-    tha = message.macsa.to_array
+    tha = message.macsa.to_a
 
     return create_arp_packet( 0x2, tha, sha, tpa, spa )
   end
@@ -99,7 +99,7 @@ module Utils
 
 
   def create_icmpv4_reply entry, interface, message
-    data = create_ether_header( entry.hwaddr.to_array, interface.hwaddr.to_array, [ 0x08, 0x00 ] )
+    data = create_ether_header( entry.hwaddr.to_a, interface.hwaddr.to_a, [ 0x08, 0x00 ] )
 
     data.concat( create_ipv4_header( message ) )
 
