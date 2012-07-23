@@ -30,9 +30,11 @@ class RoutingTable
   end
 
 
-  def add dest, plen, gateway
+  def add options
+    dest = IPAddr.new( options[ :destination ] )
+    plen = options[ :plen ]
     prefix = dest.mask( plen )
-    @db[ plen ][ prefix.to_i ] = gateway
+    @db[ plen ][ prefix.to_i ] = IPAddr.new( options[ :gateway ] )
   end
 
 

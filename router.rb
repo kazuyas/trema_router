@@ -36,21 +36,25 @@ class Router < Controller
     @routing_table = RoutingTable.new
     @interfaces = Interfaces.new
 
-    @interfaces << Interface.new( 
-      :port => 47, 
-      :hwaddr => "54:00:00:01:01:01", 
-      :ipaddr => "192.168.11.1", 
-      :plen => 24 
+    @interfaces << Interface.new(
+      :port => 47,
+      :hwaddr => "54:00:00:01:01:01",
+      :ipaddr => "192.168.11.1",
+      :plen => 24
     )
 
-    @interfaces << Interface.new( 
-      :port => 45, 
-      :hwaddr => "54:00:00:02:02:02", 
-      :ipaddr => "192.168.12.1", 
-      :plen => 24 
+    @interfaces << Interface.new(
+      :port => 45,
+      :hwaddr => "54:00:00:02:02:02",
+      :ipaddr => "192.168.12.1",
+      :plen => 24
     )
 
-    @routing_table.add( IPAddr.new( "192.168.13.0" ), 24, IPAddr.new( "192.168.12.2" ) )
+    @routing_table.add(
+      :destination => "192.168.13.0",
+      :plen => 24,
+      :gateway => "192.168.12.2"
+    )
   end
 
 
