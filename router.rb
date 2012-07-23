@@ -21,7 +21,6 @@
 require "arp"
 require "config"
 require "interface"
-require "packet-queue"
 require "routing-table"
 require "utils"
 
@@ -37,7 +36,8 @@ class Router < Controller
     @interfaces = Interfaces.new( $interface )
     @arp_table = ARPTable.new
     @routing_table = RoutingTable.new( $route )
-    @unresolved_packets = PacketQueue.new
+#    @unresolved_packets = Hash.new { [] }
+    @unresolved_packets = []
   end
 
 
@@ -78,7 +78,9 @@ class Router < Controller
 
   def handle_arp_reply dpid, message
     @arp_table.update( message.in_port, message.arp_spa, message.arp_sha )
-    @unresolved_packets[ message.arp_spa.value.to_i ].each do | each |
+#    info "#{ message.arp_spa.to_i }, #{ @unresolved_packets[ message.arp_spa.to_i ].length }"
+#    @unresolved_packets[ message.arp_spa.to_i ].each do | each |
+    @unresolved_packets.each do | each |
       info "test"
     end
   end
@@ -169,7 +171,9 @@ class Router < Controller
   def handle_unresolved_packet dpid, message, interface, ipaddr
     packet = create_arp_request( interface, ipaddr )
     send_packet dpid, packet, interface
-    @unresolved_packets[ ipaddr.to_i ] << message
+#    @unresolved_packets[ ipaddr.to_i ] << message
+    @unresolved_packets << message
+#    info "#{ ipaddr.to_i }, #{ @unresolved_packets[ ipaddr.to_i ].length }"
   end
 
   
