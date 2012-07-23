@@ -29,7 +29,7 @@ class Interface
   attr_reader :port
 
 
-  def initialize options = {}
+  def initialize options
     @port = options[ :port ]
     @hwaddr = Mac.new( options[ :hwaddr ] )
     @ipaddr = IPAddr.new( options[ :ipaddr ] )
@@ -53,7 +53,7 @@ end
 
 
 class Interfaces
-  def initialize interfaces
+  def initialize interfaces = []
     @list = []
     interfaces.each do | each |
       @list << Interface.new( each )
@@ -84,7 +84,7 @@ class Interfaces
 
 
   def find_by_port_and_ipaddr port, ipaddr
-    interface = @list.find do | each |
+    @list.find do | each |
       each.port == port and each.ipaddr == ipaddr
     end
   end

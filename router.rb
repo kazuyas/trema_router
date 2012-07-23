@@ -100,7 +100,7 @@ class Router < Controller
     arp_entry = @arp_table.lookup( saddr )
     if arp_entry.nil?
       send_packet dpid, interface, create_arp_request( interface, saddr )
-      @unresolved_packets[ saddr.value.to_i ] << message
+      @unresolved_packets[ saddr.to_i ] << message
     else
       send_packet dpid, interface, create_icmpv4_reply( arp_entry, interface, message )
     end
