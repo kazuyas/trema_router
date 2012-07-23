@@ -36,12 +36,17 @@ class Interface
     @plen = options[ :plen ]
   end
 
+  
+  def has? mac
+    mac == hwaddr
+  end
+
 
   def forward_action macda
     [
-      ActionSetDlSrc.new( :dl_src => self.hwaddr ),
+      ActionSetDlSrc.new( :dl_src => hwaddr ),
       ActionSetDlDst.new( :dl_dst => macda ),
-      ActionOutput.new( self.port )
+      ActionOutput.new( port )
     ]
   end
 end
@@ -51,16 +56,11 @@ class Interfaces
   def initialize interfaces
     @list = []
     interfaces.each do | each |
-      self.add( each )
+      @list << Interface.new( each )
     end
   end
 
   
-  def add options
-    @list << Interface.new( options )
-  end
-  
-
   def find_by_port port
     @list.find do | each |
       each.port == port
@@ -90,16 +90,12 @@ class Interfaces
   end
 
 
-  def ours? port, hwaddr
-    interface = self.find_by_port( port )
-    return false if interface.nil?
+  def ours? port, macda
+    return true if macda.broadcast?
 
-    if hwaddr.to_a == [ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff ]
+    interface = find_by_port( port )
+    if not interface.nil? and interface.has?( macda )
       return true
-    elsif hwaddr == interface.hwaddr
-      return true
-    else
-      return false
     end
   end
 end

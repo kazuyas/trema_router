@@ -28,7 +28,7 @@ class RoutingTable
   def initialize route
     @db = Array.new( ADDR_LEN + 1 ) { Hash.new }
     route.each do | each |
-      self.add each
+      add( each )
     end
   end
 

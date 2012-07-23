@@ -19,7 +19,7 @@
 
 
 module Utils
-  def ipaddr_to_array addr
+  def ipaddr_to_a addr
     addr.to_s.split( "." ).collect do | each |
       each.to_i
     end
@@ -58,10 +58,10 @@ module Utils
 
 
   def create_arp_request interface, addr
-    spa = ipaddr_to_array( interface.ipaddr )
+    spa = ipaddr_to_a( interface.ipaddr )
     sha = interface.hwaddr.to_a
 
-    tpa = ipaddr_to_array( addr )
+    tpa = ipaddr_to_a( addr )
     tha = [ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff ]
 
     return create_arp_packet( 0x1, tha, sha, tpa, spa )
@@ -69,10 +69,10 @@ module Utils
 
 
   def create_arp_reply message, replyaddr
-    spa = message.arp_tpa.to_array
+    spa = message.arp_tpa.to_a
     sha = replyaddr.to_a
 
-    tpa = message.arp_spa.to_array
+    tpa = message.arp_spa.to_a
     tha = message.macsa.to_a
 
     return create_arp_packet( 0x2, tha, sha, tpa, spa )
@@ -91,8 +91,8 @@ module Utils
     data.concat( [ 0x40, message.ipv4_protocol ] ) # ttl, protocol
     ipv4_checksum = [ message.ipv4_checksum >> 8, message.ipv4_checksum & 0xff ]
     data.concat( ipv4_checksum ) # checksum
-    data.concat( message.ipv4_daddr.to_array )
-    data.concat( message.ipv4_saddr.to_array )
+    data.concat( message.ipv4_daddr.to_a )
+    data.concat( message.ipv4_saddr.to_a )
     data.pack( "C*" )
     return data
   end
