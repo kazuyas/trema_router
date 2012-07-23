@@ -20,8 +20,6 @@
 
 class PacketQueue
   extend Forwardable
-  
-  
   def_delegator :@packets, :[]
 
 

@@ -19,11 +19,11 @@
 
 
 require "arp"
-require "interface"
-require "routing-table"
-require "packet-queue"
-require "utils"
 require "config"
+require "interface"
+require "packet-queue"
+require "routing-table"
+require "utils"
 
 
 class Router < Controller
@@ -108,19 +108,13 @@ class Router < Controller
       packet = create_icmpv4_reply( arp_entry, interface, message )      
       send_packet dpid, packet, interface
     else
-      packet = create_arp_request( interface, saddr )
-      send_packet dpid, packet, interface
-      @unresolved_packets[ saddr.to_i ] << message
+      handle_unresolved_packet dpid, message, interface, saddr
     end
   end
 
 
   def forward dpid, message
-    daddr = message.ipv4_daddr.value
-    nexthop = @routing_table.lookup( daddr ) 
-    if not nexthop
-      nexthop = daddr
-    end
+    nexthop = resolve_nexthop( message )
 
     interface = @interfaces.find_by_prefix( nexthop )
     if not interface or interface.port == message.in_port
@@ -133,9 +127,18 @@ class Router < Controller
       flow_mod dpid, message, action
       packet_out dpid, message.data, action
     else
-      packet = create_arp_request( interface, nexthop )
-      send_packet dpid, packet, interface
-      @unresolved_packets[ nexthop.to_i ] << message
+      handle_unresolved_packet dpid, message, interface, nexthop
+    end
+  end
+
+
+  def resolve_nexthop message
+    daddr = message.ipv4_daddr.value
+    nexthop = @routing_table.lookup( daddr ) 
+    if nexthop
+      nexthop
+    else
+      daddr
     end
   end
 
@@ -162,7 +165,14 @@ class Router < Controller
     packet_out dpid, packet, ActionOutput.new( :port => interface.port )
   end
 
+  
+  def handle_unresolved_packet dpid, message, interface, ipaddr
+    packet = create_arp_request( interface, ipaddr )
+    send_packet dpid, packet, interface
+    @unresolved_packets[ ipaddr.to_i ] << message
+  end
 
+  
   def age_arp_table
     @arp_table.age
   end
