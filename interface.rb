@@ -30,11 +30,11 @@ class Interface
   attr_reader :port
 
 
-  def initialize port, hwaddr, ipaddr, plen
-    @port = port
-    @hwaddr = Trema::Mac.new( hwaddr )
-    @ipaddr = IPAddr.new( ipaddr )
-    @plen = plen
+  def initialize options = {}
+    @port = options[ :port ]
+    @hwaddr = Trema::Mac.new( options[ :hwaddr ] )
+    @ipaddr = IPAddr.new( options[ :ipaddr ] )
+    @plen = options[ :plen ]
   end
 
 
