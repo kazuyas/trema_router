@@ -70,7 +70,7 @@ class Router < Controller
     port = message.in_port
     interface = @interfaces.find_by_port_and_ipaddr( port, message.arp_tpa )
     if interface
-      send_packet dpid, port, create_arp_reply( message, interface.hwaddr )
+      send_packet dpid, interface, create_arp_reply( message, interface.hwaddr )
     end
   end
 
