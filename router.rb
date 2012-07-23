@@ -22,6 +22,7 @@ require "arp"
 require "interface"
 require "routing-table"
 require "utils"
+require "config"
 
 
 class Router < Controller
@@ -33,28 +34,8 @@ class Router < Controller
 
   def start
     @arp_table = ARPTable.new
-    @routing_table = RoutingTable.new
-    @interfaces = Interfaces.new
-
-    @interfaces.add(
-      :port => 47,
-      :hwaddr => "54:00:00:01:01:01",
-      :ipaddr => "192.168.11.1",
-      :plen => 24
-    )
-
-    @interfaces.add(
-      :port => 45,
-      :hwaddr => "54:00:00:02:02:02",
-      :ipaddr => "192.168.12.1",
-      :plen => 24
-    )
-
-    @routing_table.add(
-      :destination => "192.168.13.0",
-      :plen => 24,
-      :gateway => "192.168.12.2"
-    )
+    @routing_table = RoutingTable.new( $route )
+    @interfaces = Interfaces.new( $interface )
   end
 
 

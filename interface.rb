@@ -49,8 +49,11 @@ end
 
 
 class Interfaces
-  def initialize
+  def initialize interfaces
     @list = []
+    interfaces.each do | each |
+      @list << Interface.new( each )
+    end
   end
 
   
