@@ -96,7 +96,7 @@ class Router < Controller
 
 
   def should_forward? message
-    @interfaces.find_by_ipaddr( message.ipv4_daddr ).nil?
+    not @interfaces.find_by_ipaddr( message.ipv4_daddr )
   end
 
 
@@ -104,13 +104,13 @@ class Router < Controller
     interface = @interfaces.find_by_port( message.in_port )
     saddr = message.ipv4_saddr.value
     arp_entry = @arp_table.lookup( saddr )
-    if arp_entry.nil?
+    if arp_entry
+      packet = create_icmpv4_reply( arp_entry, interface, message )      
+      send_packet dpid, packet, interface
+    else
       packet = create_arp_request( interface, saddr )
       send_packet dpid, packet, interface
       @unresolved_packets[ saddr.to_i ] << message
-    else
-      packet = create_icmpv4_reply( arp_entry, interface, message )      
-      send_packet dpid, packet, interface
     end
   end
 
@@ -118,23 +118,24 @@ class Router < Controller
   def forward dpid, message
     daddr = message.ipv4_daddr.value
     nexthop = @routing_table.lookup( daddr ) 
-    if nexthop.nil?
+    if not nexthop
       nexthop = daddr
     end
 
     interface = @interfaces.find_by_prefix( nexthop )
-    return if interface.nil?
-    return if interface.port == message.in_port
+    if not interface or interface.port == message.in_port
+      return 
+    end
 
     arp_entry = @arp_table.lookup( nexthop )
-    if arp_entry.nil?
-      packet = create_arp_request( interface, nexthop )
-      send_packet dpid, packet, interface
-      @unresolved_packets[ nexthop.to_i ] << message
-    else
+    if arp_entry
       action = interface.forward_action( arp_entry.hwaddr )
       flow_mod dpid, message, action
       packet_out dpid, message.data, action
+    else
+      packet = create_arp_request( interface, nexthop )
+      send_packet dpid, packet, interface
+      @unresolved_packets[ nexthop.to_i ] << message
     end
   end
 

@@ -53,7 +53,7 @@ class RoutingTable
     ( 0..ADDR_LEN ).reverse_each do | plen |
       prefix = dest.mask( plen )
       entry = @db[ plen ][ prefix.to_i ]
-      return entry if not entry.nil?
+      return entry if entry
     end
     nil
   end
