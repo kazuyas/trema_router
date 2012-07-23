@@ -49,17 +49,15 @@ end
 
 
 class Interfaces
-  extend Forwardable
-  def_delegator :@list, :<<
-
-
-  attr_reader :list
-
-
   def initialize
     @list = []
   end
 
+  
+  def add options
+    @list << Interface.new( options )
+  end
+  
 
   def find_by_port port
     @list.find do | each |
