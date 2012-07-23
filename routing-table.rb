@@ -52,9 +52,8 @@ class RoutingTable
   def lookup dest
     ( 0..ADDR_LEN ).reverse_each do | plen |
       prefix = dest.mask( plen )
-      if entry = @db[ plen ][ prefix.to_i ]
-        return entry
-      end
+      entry = @db[ plen ][ prefix.to_i ]
+      return entry if not entry.nil?
     end
     nil
   end

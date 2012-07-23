@@ -70,7 +70,8 @@ class Router < Controller
     port = message.in_port
     interface = @interfaces.find_by_port_and_ipaddr( port, message.arp_tpa )
     if interface
-      send_packet dpid, interface, create_arp_reply( message, interface.hwaddr )
+      packet = create_arp_reply( message, interface.hwaddr )
+      send_packet dpid, packet, interface
     end
   end
 
@@ -94,30 +95,23 @@ class Router < Controller
   end
 
 
-  def handle_icmpv4_echo_request dpid, message
-    interface = @interfaces.find_by_port( message.in_port )
-    saddr = message.ipv4_saddr.value
-    arp_entry = @arp_table.lookup( saddr )
-    if arp_entry.nil?
-      send_packet dpid, interface, create_arp_request( interface, saddr )
-      @unresolved_packets[ saddr.to_i ] << message
-    else
-      send_packet dpid, interface, create_icmpv4_reply( arp_entry, interface, message )
-    end
-  end
-
-
   def should_forward? message
     @interfaces.find_by_ipaddr( message.ipv4_daddr ).nil?
   end
 
 
-  def send_packet dpid, interface, packet
-    send_packet_out(
-      dpid,
-      :data => packet,
-      :actions => ActionOutput.new( :port => interface.port )
-    )
+  def handle_icmpv4_echo_request dpid, message
+    interface = @interfaces.find_by_port( message.in_port )
+    saddr = message.ipv4_saddr.value
+    arp_entry = @arp_table.lookup( saddr )
+    if arp_entry.nil?
+      packet = create_arp_request( interface, saddr )
+      send_packet dpid, packet, interface
+      @unresolved_packets[ saddr.to_i ] << message
+    else
+      packet = create_icmpv4_reply( arp_entry, interface, message )      
+      send_packet dpid, packet, interface
+    end
   end
 
 
@@ -134,26 +128,37 @@ class Router < Controller
 
     arp_entry = @arp_table.lookup( nexthop )
     if arp_entry.nil?
-      send_packet dpid, interface, create_arp_request( interface, nexthop )
+      packet = create_arp_request( interface, nexthop )
+      send_packet dpid, packet, interface
       @unresolved_packets[ nexthop.to_i ] << message
     else
-      forward_packet dpid, message, interface, arp_entry.hwaddr
+      action = interface.forward_action( arp_entry.hwaddr )
+      flow_mod dpid, message, action
+      packet_out dpid, message.data, action
     end
   end
 
 
-  def forward_packet dpid, message, interface, daddr
-    action = interface.forward_action( daddr )
+  def flow_mod dpid, message, action
     send_flow_mod_add(
       dpid,
       :match => ExactMatch.from( message ),
       :actions => action
     )
+  end
+
+
+  def packet_out dpid, packet, action
     send_packet_out(
       dpid,
-      :packet_in => message,
+      :data => packet,
       :actions => action
     )
+  end
+
+
+  def send_packet dpid, packet, interface
+    packet_out dpid, packet, ActionOutput.new( :port => interface.port )
   end
 
 
