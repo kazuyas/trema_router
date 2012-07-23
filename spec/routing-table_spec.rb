@@ -38,22 +38,30 @@ describe RoutingTable do
 
 
   it "should be answered" do
-    @rt.add( @dest01, 32, @gateway11 )
-    @rt.lookup( @dest01 ).should == @gateway11
+    @rt.add( :destination => "192.168.0.1", 
+             :plen => 32, 
+             :gateway => "192.168.1.1" )
+    @rt.lookup( @dest01 ).to_s.should == "192.168.1.1"
   end
 
 
   it "should be answered the longest matched gateway" do
-    @rt.add( @dest01, 32, @gateway11 )
-    @rt.add( @dest00, 24, @gateway12 )
+    @rt.add( :destination => "192.168.0.1", 
+             :plen => 32, 
+             :gateway => "192.168.1.1" )
+    @rt.add( :destination => "192.168.0.0", 
+             :plen => 24, 
+             :gateway => "192.168.1.2" )
 
-    @rt.lookup( @dest01 ).should == @gateway11
-    @rt.lookup( @dest02 ).should == @gateway12
+    @rt.lookup( @dest01 ).to_s.should == "192.168.1.1"
+    @rt.lookup( @dest02 ).to_s.should == "192.168.1.2"
   end
 
 
   it "should not be answered if unmatched" do
-    @rt.add( @dest01, 32, @gateway11 )
+    @rt.add( :destination => "192.168.0.1", 
+             :plen => 32, 
+             :gateway => "192.168.1.1" )
     @rt.lookup( @dest21 ).should == nil
   end
 
@@ -64,12 +72,17 @@ describe RoutingTable do
 
 
   it "can delete an entry" do
-    @rt.add( @dest01, 32, @gateway11 )
-    @rt.add( @dest00, 24, @gateway12 )
-    @rt.lookup( @dest01 ).should == @gateway11
+    @rt.add( :destination => "192.168.0.1", 
+             :plen => 32, 
+             :gateway => "192.168.1.1" )
+    @rt.add( :destination => "192.168.0.0", 
+             :plen => 24, 
+             :gateway => "192.168.1.2" )
+    @rt.lookup( @dest01 ).to_s.should == "192.168.1.1"
 
-    @rt.delete( @dest01, 32 )
-    @rt.lookup( @dest01 ).should == @gateway12
+    @rt.delete( :destination => "192.168.0.1", 
+                :plen => 32 )
+    @rt.lookup( @dest01 ).to_s.should == "192.168.1.2"
   end
 end
 

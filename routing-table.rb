@@ -38,7 +38,9 @@ class RoutingTable
   end
 
 
-  def delete dest, plen
+  def delete options
+    dest = IPAddr.new( options[ :destination ] )
+    plen = options[ :plen ]
     prefix = dest.mask( plen )
     @db[ plen ].delete( prefix.to_i )
   end
