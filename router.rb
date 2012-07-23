@@ -21,6 +21,7 @@
 require "arp"
 require "interface"
 require "routing-table"
+require "packet-queue"
 require "utils"
 require "config"
 
@@ -33,9 +34,10 @@ class Router < Controller
 
 
   def start
+    @interfaces = Interfaces.new( $interface )
     @arp_table = ARPTable.new
     @routing_table = RoutingTable.new( $route )
-    @interfaces = Interfaces.new( $interface )
+    @unresolved_packets = PacketQueue.new
   end
 
 
@@ -75,6 +77,9 @@ class Router < Controller
 
   def handle_arp_reply dpid, message
     @arp_table.update( message.in_port, message.arp_spa, message.arp_sha )
+    @unresolved_packets[ message.arp_spa.value.to_i ].each do | each |
+      info "test"
+    end
   end
 
 
@@ -90,13 +95,14 @@ class Router < Controller
 
 
   def handle_icmpv4_echo_request dpid, message
-    port = message.in_port
-    interface = @interfaces.find_by_port( port )
-    arp_entry = @arp_table.lookup( message.ipv4_saddr )
+    interface = @interfaces.find_by_port( message.in_port )
+    saddr = message.ipv4_saddr.value
+    arp_entry = @arp_table.lookup( saddr )
     if arp_entry.nil?
-      send_packet dpid, port, create_arp_request( interface, message.ipv4_saddr )
+      send_packet dpid, interface, create_arp_request( interface, saddr )
+      @unresolved_packets[ saddr.value.to_i ] << message
     else
-      send_packet dpid, port, create_icmpv4_reply( arp_entry, interface, message )
+      send_packet dpid, interface, create_icmpv4_reply( arp_entry, interface, message )
     end
   end
 
@@ -106,30 +112,30 @@ class Router < Controller
   end
 
 
-  def send_packet dpid, out_port, packet
+  def send_packet dpid, interface, packet
     send_packet_out(
       dpid,
       :data => packet,
-      :actions => ActionOutput.new( :port => out_port )
+      :actions => ActionOutput.new( :port => interface.port )
     )
   end
 
 
   def forward dpid, message
-    nexthop = @routing_table.lookup( message.ipv4_daddr.value )
+    daddr = message.ipv4_daddr.value
+    nexthop = @routing_table.lookup( daddr ) 
     if nexthop.nil?
-      nexthop = message.ipv4_daddr.value
+      nexthop = daddr
     end
 
     interface = @interfaces.find_by_prefix( nexthop )
     return if interface.nil?
-
-    port = interface.port
-    return if port == message.in_port
+    return if interface.port == message.in_port
 
     arp_entry = @arp_table.lookup( nexthop )
     if arp_entry.nil?
-      send_packet dpid, port, create_arp_request( interface, nexthop )
+      send_packet dpid, interface, create_arp_request( interface, nexthop )
+      @unresolved_packets[ nexthop.to_i ] << message
     else
       forward_packet dpid, message, interface, arp_entry.hwaddr
     end

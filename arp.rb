@@ -64,7 +64,7 @@ class ARPTable
   def update port, ipaddr, hwaddr
     entry = @db[ ipaddr.to_i ]
     if entry
-      entry.update( port, hw_addr )
+      entry.update( port, hwaddr )
     else
       new_entry = ARPEntry.new( port, hwaddr, DEFAULT_AGE_MAX )
       @db[ ipaddr.to_i ] = new_entry
