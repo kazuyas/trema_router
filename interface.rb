@@ -25,7 +25,7 @@ require "routing-table"
 class Interface
   attr_reader :hwaddr
   attr_reader :ipaddr
-  attr_reader :plen
+  attr_reader :prefixlen
   attr_reader :port
 
 
@@ -33,7 +33,7 @@ class Interface
     @port = options[ :port ]
     @hwaddr = Mac.new( options[ :hwaddr ] )
     @ipaddr = IPAddr.new( options[ :ipaddr ] )
-    @plen = options[ :plen ]
+    @prefixlen = options[ :prefixlen ]
   end
 
   
@@ -77,8 +77,8 @@ class Interfaces
 
   def find_by_prefix ipaddr
     @list.find do | each |
-      plen = each.plen
-      each.ipaddr.mask( plen ) == ipaddr.mask( plen )
+      prefixlen = each.prefixlen
+      each.ipaddr.mask( prefixlen ) == ipaddr.mask( prefixlen )
     end
   end
 

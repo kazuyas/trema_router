@@ -35,24 +35,24 @@ class RoutingTable
 
   def add options
     dest = IPAddr.new( options[ :destination ] )
-    plen = options[ :plen ]
-    prefix = dest.mask( plen )
-    @db[ plen ][ prefix.to_i ] = IPAddr.new( options[ :gateway ] )
+    prefixlen = options[ :prefixlen ]
+    prefix = dest.mask( prefixlen )
+    @db[ prefixlen ][ prefix.to_i ] = IPAddr.new( options[ :gateway ] )
   end
 
 
   def delete options
     dest = IPAddr.new( options[ :destination ] )
-    plen = options[ :plen ]
-    prefix = dest.mask( plen )
-    @db[ plen ].delete( prefix.to_i )
+    prefixlen = options[ :prefixlen ]
+    prefix = dest.mask( prefixlen )
+    @db[ prefixlen ].delete( prefix.to_i )
   end
 
 
   def lookup dest
-    ( 0..ADDR_LEN ).reverse_each do | plen |
-      prefix = dest.mask( plen )
-      entry = @db[ plen ][ prefix.to_i ]
+    ( 0..ADDR_LEN ).reverse_each do | prefixlen |
+      prefix = dest.mask( prefixlen )
+      entry = @db[ prefixlen ][ prefix.to_i ]
       return entry if entry
     end
     nil
