@@ -44,8 +44,8 @@ class Interface
 
   def forward_action macda
     [
-      ActionSetDlSrc.new( :dl_src => hwaddr ),
-      ActionSetDlDst.new( :dl_dst => macda ),
+      ActionSetDlSrc.new( hwaddr.to_s ),
+      ActionSetDlDst.new( macda.to_s ),
       ActionOutput.new( port )
     ]
   end
