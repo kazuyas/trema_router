@@ -18,7 +18,7 @@
 #
 
 
-require "arp"
+require "arptable"
 require "config"
 require "interface"
 require "packet-queue"
