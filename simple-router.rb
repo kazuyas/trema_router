@@ -26,7 +26,7 @@ require "routing-table"
 require "utils"
 
 
-class Router < Controller
+class SimpleRouter < Controller
   include Utils
 
 
