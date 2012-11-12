@@ -44,9 +44,9 @@ class Interface
 
   def forward_action macda
     [
-      ActionSetDlSrc.new( hwaddr.to_s ),
-      ActionSetDlDst.new( macda.to_s ),
-      ActionOutput.new( port )
+      SetEthSrcAddr.new( hwaddr.to_s ),
+      SetEthDstAddr.new( macda.to_s ),
+      SendOutPort.new( port )
     ]
   end
 end
