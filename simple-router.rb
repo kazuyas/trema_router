@@ -79,7 +79,7 @@ class SimpleRouter < Controller
   def handle_arp_reply( dpid, message )
     @arp_table.update( message.in_port, message.arp_spa, message.arp_sha )
     @unresolved_packets[ message.arp_spa.to_i ].each do | each |
-      info "under development"
+      handle_ipv4( dpid, each )
     end
   end
 
@@ -169,7 +169,6 @@ class SimpleRouter < Controller
   def handle_unresolved_packet( dpid, message, interface, ipaddr )
     packet = create_arp_request( interface, ipaddr )
     send_packet( dpid, packet, interface )
-    # under development
     @unresolved_packets[ ipaddr.to_i ] << message
   end
 

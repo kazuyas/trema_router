@@ -24,7 +24,9 @@ class PacketQueue
 
 
   def initialize
-    @packets = Hash.new { Array.new }
+    @packets = Hash.new do | hash, key |
+      hash[ key ] = Array.new
+    end
   end
 end
 
