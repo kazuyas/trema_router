@@ -42,27 +42,6 @@ module RouterUtils
   end
   
   
-  def create_arp_packet type, tha, sha, tpa, spa
-    data = []
-    data.concat( create_ether_header( tha, sha, [ 0x08, 0x06 ] ) )
-    # arp
-    data.concat( [ 0x00, 0x01 ] ) # hardware type
-    data.concat( [ 0x08, 0x00 ] ) # protocol type
-    data.concat( [ 0x06 ] ) # hardware address length
-    data.concat( [ 0x04 ] ) # protocol address length
-    data.concat( [ 0x00, type ] ) # operation
-    data.concat( sha )
-    data.concat( spa )
-    data.concat( tha )
-    data.concat( tpa )
-    while data.length < 60 do
-      data.concat( [ 0x00 ] )
-    end
-
-    return data.pack( "C*" )
-  end
-
-
   def create_arp_request_from interface, addr
     spa = interface.ipaddr
     sha = interface.hwaddr
@@ -72,13 +51,14 @@ module RouterUtils
 
 
   def create_arp_reply_from message, replyaddr
-    spa = message.arp_tpa.to_a
-    sha = replyaddr.to_a
-
-    tpa = message.arp_spa.to_a
-    tha = message.macsa.to_a
-
-    return create_arp_packet( 0x2, tha, sha, tpa, spa )
+    spa = message.arp_tpa
+    sha = replyaddr
+    
+    tpa = message.arp_spa
+    tha = message.macsa
+    
+    arp_reply = ARPReply.new( tha, sha, tpa, spa )
+    arp_reply.pack
   end
 
 
