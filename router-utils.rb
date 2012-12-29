@@ -19,6 +19,7 @@
 
 
 require 'ipaddr'
+require 'packet'
 
 
 class IPAddr
@@ -63,13 +64,10 @@ module RouterUtils
 
 
   def create_arp_request_from interface, addr
-    spa = interface.ipaddr.to_a
-    sha = interface.hwaddr.to_a
-
-    tpa = addr.to_a
-    tha = [ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff ]
-
-    return create_arp_packet( 0x1, tha, sha, tpa, spa )
+    spa = interface.ipaddr
+    sha = interface.hwaddr
+    arp_request = ARPRequest.new( sha, addr, spa )
+    arp_request.pack
   end
 
 
