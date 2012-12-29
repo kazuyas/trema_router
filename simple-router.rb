@@ -165,8 +165,8 @@ class SimpleRouter < Controller
 
   def create_action_from( macsa, macda, port )
     [
-      SetEthSrcAddr.new( macsa ),
-      SetEthDstAddr.new( macda ),
+      SetEthSrcAddr.new( macsa.to_s ),
+      SetEthDstAddr.new( macda.to_s ),
       SendOutPort.new( port )
     ]
   end

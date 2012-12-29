@@ -25,7 +25,7 @@ require "routing-table"
 class Interface
   attr_reader :hwaddr
   attr_reader :ipaddr
-  attr_reader :prefixlen
+  attr_reader :masklen
   attr_reader :port
 
 
@@ -33,21 +33,12 @@ class Interface
     @port = options[ :port ]
     @hwaddr = Mac.new( options[ :hwaddr ] )
     @ipaddr = IPAddr.new( options[ :ipaddr ] )
-    @prefixlen = options[ :prefixlen ]
+    @masklen = options[ :masklen ]
   end
 
   
   def has? mac
     mac == hwaddr
-  end
-
-
-  def forward_action macda
-    [
-      SetEthSrcAddr.new( hwaddr.to_s ),
-      SetEthDstAddr.new( macda.to_s ),
-      SendOutPort.new( port )
-    ]
   end
 end
 
@@ -77,8 +68,8 @@ class Interfaces
 
   def find_by_prefix ipaddr
     @list.find do | each |
-      prefixlen = each.prefixlen
-      each.ipaddr.mask( prefixlen ) == ipaddr.mask( prefixlen )
+      masklen = each.masklen
+      each.ipaddr.mask( masklen ) == ipaddr.mask( masklen )
     end
   end
 
