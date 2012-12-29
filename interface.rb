@@ -18,7 +18,7 @@
 #
 
 
-require "arptable"
+require "arp-table"
 require "routing-table"
 
 

@@ -17,78 +17,73 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-
-require "arptable"
-require "config"
+require "arp-table"
 require "interface"
-require "packet-queue"
+require "router-utils"
 require "routing-table"
-require "utils"
 
 
 class SimpleRouter < Controller
-  include Utils
-
-
-  add_timer_event :age_arp_table, 5, :periodic
+  include RouterUtils
 
 
   def start
+    load "simple_router.conf"
     @interfaces = Interfaces.new( $interface )
     @arp_table = ARPTable.new
     @routing_table = RoutingTable.new( $route )
-    @unresolved_packets = PacketQueue.new
   end
 
 
   def packet_in( dpid, message )
-    return if not ours?( message )
+    return if not to_me?( message )
 
     if message.arp_request?
-      handle_arp_request( dpid, message )
+      handle_arp_request dpid, message
     elsif message.arp_reply?
-      handle_arp_reply( dpid, message )
+      handle_arp_reply message
     elsif message.ipv4?
-      handle_ipv4( dpid, message )
+      handle_ipv4 dpid, message
     else
       # noop.
     end
   end
 
 
-  #######
   private
-  #######
 
 
-  def ours?( message )
-    @interfaces.ours?( message.in_port, message.macda )
+  def to_me?( message )
+    return true if message.macda.broadcast?
+
+    interface = @interfaces.find_by_port( message.in_port )
+    if interface and interface.has?( message.macda )
+      return true
+    end
   end
 
 
   def handle_arp_request( dpid, message )
     port = message.in_port
-    interface = @interfaces.find_by_port_and_ipaddr( port, message.arp_tpa )
+    daddr = message.arp_tpa
+    interface = @interfaces.find_by_port_and_ipaddr( port, daddr )
     if interface
-      packet = create_arp_reply( message, interface.hwaddr )
-      send_packet( dpid, packet, interface )
+      arp_reply = create_arp_reply_from( message, interface.hwaddr )
+      packet_out dpid, arp_reply, SendOutPort.new( interface.port )
     end
   end
 
 
-  def handle_arp_reply( dpid, message )
-    @arp_table.update( message.in_port, message.arp_spa, message.arp_sha )
-    @unresolved_packets[ message.arp_spa.to_i ].each do | each |
-      info "under development"
-    end
+    def handle_arp_reply( message )
+    @arp_table.update message.in_port, message.arp_spa, message.arp_sha
   end
 
 
   def handle_ipv4( dpid, message )
     if should_forward?( message )
-      forward( dpid, message )
+      forward dpid, message
     elsif message.icmpv4_echo_request?
-      handle_icmpv4_echo_request( dpid, message )
+      handle_icmpv4_echo_request dpid, message
     else
       # noop.
     end
@@ -105,40 +100,41 @@ class SimpleRouter < Controller
     saddr = message.ipv4_saddr.value
     arp_entry = @arp_table.lookup( saddr )
     if arp_entry
-      packet = create_icmpv4_reply( arp_entry, interface, message )      
-      send_packet( dpid, packet, interface )
+      icmpv4_reply = create_icmpv4_reply( arp_entry, interface, message )
+      packet_out dpid, icmpv4_reply, SendOutPort.new( interface.port )
     else
-      handle_unresolved_packet( dpid, message, interface, saddr )
+      handle_unresolved_packet dpid, message, interface, saddr
     end
   end
 
 
   def forward( dpid, message )
-    nexthop = resolve_nexthop( message )
+    next_hop = resolve_next_hop( message.ipv4_daddr )
 
-    interface = @interfaces.find_by_prefix( nexthop )
+    interface = @interfaces.find_by_prefix( next_hop )
     if not interface or interface.port == message.in_port
-      return 
+      return
     end
 
-    arp_entry = @arp_table.lookup( nexthop )
+    arp_entry = @arp_table.lookup( next_hop )
     if arp_entry
-      action = interface.forward_action( arp_entry.hwaddr )
-      flow_mod( dpid, message, action )
-      packet_out( dpid, message.data, action )
+      macsa = interface.hwaddr
+      macda = arp_entry.hwaddr
+      action = create_action_from( macsa, macda, interface.port )
+      flow_mod dpid, message, action
+      packet_out dpid, message.data, action
     else
-      handle_unresolved_packet( dpid, message, interface, nexthop )
+      handle_unresolved_packet dpid, message, interface, next_hop
     end
   end
 
 
-  def resolve_nexthop( message )
-    daddr = message.ipv4_daddr.value
-    nexthop = @routing_table.lookup( daddr ) 
-    if nexthop
-      nexthop
+  def resolve_next_hop( daddr )
+    next_hop = @routing_table.lookup( daddr.value )
+    if next_hop
+      next_hop
     else
-      daddr
+      daddr.value
     end
   end
 
@@ -161,21 +157,18 @@ class SimpleRouter < Controller
   end
 
 
-  def send_packet( dpid, packet, interface )
-    packet_out( dpid, packet, ActionOutput.new( :port => interface.port ) )
-  end
-
-  
   def handle_unresolved_packet( dpid, message, interface, ipaddr )
-    packet = create_arp_request( interface, ipaddr )
-    send_packet( dpid, packet, interface )
-    # under development
-    @unresolved_packets[ ipaddr.to_i ] << message
+    arp_request = create_arp_request_from( interface, ipaddr )
+    packet_out dpid, arp_request, SendOutPort.new( interface.port )
   end
 
-  
-  def age_arp_table
-    @arp_table.age
+
+  def create_action_from( macsa, macda, port )
+    [
+      SetEthSrcAddr.new( macsa ),
+      SetEthDstAddr.new( macda ),
+      SendOutPort.new( port )
+    ]
   end
 end
 
